@@ -61,12 +61,17 @@ class ProjectUser(models.Model):
 """
 
 class TaskStaus(Enum):
+    """
+    Enum for task status
+    """
     ASSIGNED = "assigned"
     IN_PROGRESS = "in_progress"
     DONE = "done"
 
 class Task(models.Model):
-    """Modelo para tareas"""
+    """
+    Represents a project's task
+    """
     id = fields.IntField(pk=True)
     task_id = fields.CharField(max_length=50, index=True)  # id for users to determine
     name = fields.CharField(max_length=100)
