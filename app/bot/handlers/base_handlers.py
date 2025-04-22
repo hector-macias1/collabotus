@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Maneja el comando /start"""
+    """Manage /start command"""
     user = update.effective_user
     chat_id = update.effective_chat.id
 

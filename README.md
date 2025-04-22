@@ -19,7 +19,15 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Run the uvicorn server:
+4. Download and install [ngrok] (https://ngrok.com/downloads).
+
+5. Run ngrok on port 8000:
+```shell
+ngrok http 8000
+```
+6. Copy the generated url and paste it in the correspondent env variable (WEBHOOK_URL).
+
+7. Run the uvicorn server:
 ```shell
 uvicorn app.main:app --reload
 ```
