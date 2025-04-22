@@ -19,7 +19,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Download and install [ngrok] (https://ngrok.com/downloads).
+4. Download and install [ngrok](https://ngrok.com/downloads).
 
 5. Run ngrok on port 8000:
 ```shell
