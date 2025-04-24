@@ -5,6 +5,9 @@ uvicorn~=0.34.1
 # Database and ORM
 pydantic~=2.11.3
 tortoise-orm~=0.25.0
+aerich~=0.8.2
+tomlkit~=0.13.2
+aiosqlite~=0.21.0
 
 # Telegram
 python-telegram-bot~=22.0

@@ -2,10 +2,13 @@ import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes, CallbackQueryHandler
 
+from app.models.models import Skill, SkillType
+from app.services.survey_service import save_user_skill, save_user_skill_by_question_key
+
 survey = [
     {
         "question": "¿Qué lenguaje de programación dominas más?",
-        "key": "lenguaje",
+        "key": "language",
         "options": ["Python", "Java", "JavaScript", "PHP", "C#"]
     },
     {
@@ -14,6 +17,11 @@ survey = [
         "options": ["Django", "SpringBoot", "React, Angular, Node.js, Express, Vue, etc.", "Laravel"]
     }
 ]
+
+skill_mapping = {
+    "language": SkillType.LANGUAGE,
+    "framework": SkillType.FRAMEWORK,
+}
 
 # Dictionary for saving responses
 user_survey_progress = {}
@@ -60,4 +68,14 @@ async def handle_survey_response(update: Update, context: ContextTypes.DEFAULT_T
     if user_data:
         user_data["answers"][key] = value
         user_data["current"] += 1
+
+        # Guardar en base de datos
+        try:
+            skill_type = skill_mapping.get(key)
+            if skill_type:
+                telegram_username = query.from_user.username
+                await save_user_skill_by_question_key(telegram_username, key, value, update_existing=True)
+        except Exception as e:
+            await context.bot.send_message(chat_id=chat_id, text=f"❌ Error guardando la respuesta: {e}")
+
         await send_next_question(chat_id, context)

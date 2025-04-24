@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request, HTTPException
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, Application, MessageHandler, filters, CallbackQueryHandler
 
+from app.bot.handlers.update_handler import actualizar_habilidades_command, handle_survey_response2
 from app.config import settings
 from app.models.db import init_db, close_db
 from app.bot.handlers.base_handlers import start_command, ayuda_command, handle_message
@@ -44,7 +45,7 @@ async def startup_event():
     global telegram_application
 
     # Initialize DB
-    # await init_db()
+    await init_db()
 
     if settings.TELEGRAM_TOKEN and settings.WEBHOOK_URL and settings.WEBHOOK_SECRET:
         # Configure Telegram application
@@ -59,6 +60,7 @@ async def startup_event():
         telegram_application.add_handler(CommandHandler("ayuda", ayuda_command))
 
         telegram_application.add_handler(CommandHandler("registro", registro_command))
+        telegram_application.add_handler(CommandHandler("actualizar_habilidades", actualizar_habilidades_command))
         telegram_application.add_handler(CallbackQueryHandler(handle_survey_response))
 
         telegram_application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
@@ -85,7 +87,7 @@ async def shutdown_event():
         await telegram_application.shutdown()
 
     # Close DB connection
-    # await close_db()
+    await close_db()
 
 
 if __name__ == "__main__":

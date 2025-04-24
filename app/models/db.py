@@ -2,10 +2,17 @@ from tortoise import Tortoise
 from app.config import settings
 
 TORTOISE_ORM = {
-    "connections": {"default": settings.DATABASE_URL},
+    "connections": {
+        "default": {
+            "engine": "tortoise.backends.sqlite",
+            "credentials": {
+                "file_path": "db.sqlite3"  # Archivo SQLite
+            }
+        }
+    },
     "apps": {
         "models": {
-            "models": ["app.db.models", "aerich.models"],
+            "models": ["app.models.models", "aerich.models"],
             "default_connection": "default",
         },
     },
@@ -15,10 +22,7 @@ async def init_db():
     """
     Initialize connection to DB
     """
-    await Tortoise.init(
-        db_url=settings.DATABASE_URL,
-        modules={"models": ["app.db.models"]}
-    )
+    await Tortoise.init(config=TORTOISE_ORM)
     # Generate the schema
     await Tortoise.generate_schemas()
 
