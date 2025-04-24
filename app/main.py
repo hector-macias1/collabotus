@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request, HTTPException
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, Application, MessageHandler, filters, CallbackQueryHandler
 
+from app.bot.handlers.project_handler import crear_proyecto_command, handle_private_message
 from app.bot.handlers.update_handler import actualizar_habilidades_command, handle_survey_response2
 from app.config import settings
 from app.models.db import init_db, close_db
@@ -59,11 +60,15 @@ async def startup_event():
         telegram_application.add_handler(CommandHandler("start", start_command))
         telegram_application.add_handler(CommandHandler("ayuda", ayuda_command))
 
+        telegram_application.add_handler(CommandHandler("nuevoproyecto", crear_proyecto_command))
+
+
+
         telegram_application.add_handler(CommandHandler("registro", registro_command))
         telegram_application.add_handler(CommandHandler("actualizar_habilidades", actualizar_habilidades_command))
         telegram_application.add_handler(CallbackQueryHandler(handle_survey_response))
 
-        telegram_application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+        telegram_application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_private_message))
 
         # Initialize app
         await telegram_application.initialize()

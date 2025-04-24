@@ -27,7 +27,12 @@ ngrok http 8000
 ```
 6. Copy the generated url and paste it in the correspondent env variable (WEBHOOK_URL).
 
-7. Run the uvicorn server:
+7. Make migrations with aerich:
+```shell
+aerich init -t app.models.db.TORTOISE_ORM
+aerich init-db
+```
+8. Run the uvicorn server:
 ```shell
 uvicorn app.main:app --reload
 ```
