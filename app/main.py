@@ -5,7 +5,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, Application
 
 from app.config import settings
 from app.models.db import init_db, close_db
-from app.bot.handlers.base_handlers import start_command
+from app.bot.handlers.base_handlers import start_command, ayuda_command
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -55,6 +55,7 @@ async def startup_event():
 
         # Register handlers
         telegram_application.add_handler(CommandHandler("start", start_command))
+        telegram_application.add_handler(CommandHandler("ayuda", ayuda_command))
 
         # Initialize app
         await telegram_application.initialize()
@@ -65,7 +66,7 @@ async def startup_event():
         # Configure webhook
         webhook_url = f"{settings.WEBHOOK_URL}/webhook/{settings.WEBHOOK_SECRET}"
         await telegram_application.bot.set_webhook(webhook_url)
-        logger.info(f"Webhook configurado en: {webhook_url}")
+        logger.info(f"Webhook configured at: {webhook_url}")
 
 
 @app.on_event("shutdown")
