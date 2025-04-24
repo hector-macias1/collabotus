@@ -49,12 +49,10 @@ help_message = """
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Manage /start command"""
-    #user = update.effective_user
     chat_id = update.effective_chat.id
 
     await context.bot.send_message(
         chat_id = chat_id,
-        #text=f"¡Bienvenido {user.first_name}!"
         text = start_message,
         parse_mode='Markdown'
     )
@@ -67,4 +65,13 @@ async def ayuda_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = chat_id,
         text = help_message,
         parse_mode='Markdown'
+    )
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Manage all messages"""
+    chat_id = update.effective_chat.id
+
+    await context.bot.send_message(
+        chat_id = chat_id,
+        text = 'Introduce un comando válido'
     )

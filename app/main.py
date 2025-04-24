@@ -1,11 +1,11 @@
 import logging
 from fastapi import FastAPI, Request, HTTPException
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, Application
+from telegram.ext import ApplicationBuilder, CommandHandler, Application, MessageHandler, filters
 
 from app.config import settings
 from app.models.db import init_db, close_db
-from app.bot.handlers.base_handlers import start_command, ayuda_command
+from app.bot.handlers.base_handlers import start_command, ayuda_command, handle_message
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -56,6 +56,7 @@ async def startup_event():
         # Register handlers
         telegram_application.add_handler(CommandHandler("start", start_command))
         telegram_application.add_handler(CommandHandler("ayuda", ayuda_command))
+        telegram_application.add_handler(MessageHandler(filters.TEXT, handle_message))
 
         # Initialize app
         await telegram_application.initialize()

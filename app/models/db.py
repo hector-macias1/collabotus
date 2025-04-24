@@ -19,7 +19,7 @@ async def init_db():
         db_url=settings.DATABASE_URL,
         modules={"models": ["app.db.models"]}
     )
-    # Genera el esquema
+    # Generate the schema
     await Tortoise.generate_schemas()
 
 async def close_db():
