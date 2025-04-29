@@ -4,12 +4,12 @@ from tortoise.contrib.pydantic import pydantic_model_creator
 
 
 # Enums ------------------------------------------------------------------------
-class SubscriptionType(Enum):
+class SubscriptionType(str, Enum):
     FREE = "free"
     PREMIUM = "premium"
 
 
-class SkillType(Enum):
+class SkillType(str, Enum):
     LANGUAGE = "language"
     FRAMEWORK = "framework"
     DATABASE = "database"
@@ -21,18 +21,18 @@ class SkillType(Enum):
     DEVOPS = "devops"
 
 
-class ProjectStatus(Enum):
+class ProjectStatus(str, Enum):
     ACTIVE = "active"
     TERMINATED = "terminated"
 
 
-class TaskStatus(Enum):
+class TaskStatus(str, Enum):
     ASSIGNED = "assigned"
     IN_PROGRESS = "in_progress"
     DONE = "done"
 
 
-class ProjectRole(Enum):
+class ProjectRole(str, Enum):
     ADMIN = "admin"
     MEMBER = "member"
 
@@ -45,11 +45,11 @@ class User(models.Model):
     subscription_type = fields.CharEnumField(SubscriptionType, default=SubscriptionType.FREE)
     created_at = fields.DatetimeField(auto_now_add=True)
 
-    projects = fields.ManyToManyField("models.Project", through="project_users", related_name="members")
-    skills = fields.ManyToManyField("models.Skill", through="user_skills")
+    projects = fields.ManyToManyField("models.Project", through="project_user", related_name="members")
+    skills = fields.ManyToManyField("models.Skill", through="user_skill")
 
     class Meta:
-        table = "users"
+        table = "user"
 
 
 class Skill(models.Model):
@@ -58,7 +58,7 @@ class Skill(models.Model):
     name = fields.CharField(max_length=100, unique=True)
 
     class Meta:
-        table = "skills"
+        table = "skill"
 
 
 class Project(models.Model):
@@ -70,7 +70,7 @@ class Project(models.Model):
     created_at = fields.DatetimeField(auto_now_add=True)
 
     class Meta:
-        table = "projects"
+        table = "project"
 
 
 class ProjectUser(models.Model):
@@ -79,8 +79,8 @@ class ProjectUser(models.Model):
     role = fields.CharEnumField(ProjectRole, default=ProjectRole.MEMBER)  # Integrated system roles
 
     class Meta:
-        table = "project_users"
-        unique_together = (("project", "role"),)  # A single admin per project
+        table = "project_user"
+        #unique_together = (("project", "role"),)  # A single admin per project
 
 
 class Task(models.Model):
@@ -96,7 +96,7 @@ class Task(models.Model):
     assigned_user = fields.ForeignKeyField("models.User", null=True, related_name="tasks")
 
     class Meta:
-        table = "tasks"
+        table = "task"
 
 
 class UserSkill(models.Model):
@@ -105,7 +105,7 @@ class UserSkill(models.Model):
     value = fields.CharField(max_length=50)
 
     class Meta:
-        table = "user_skills"
+        table = "user_skill"
 
 
 
