@@ -2,6 +2,9 @@ from telegram import Update, Chat
 from telegram.constants import ChatType
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters
 
+from app.models.models import ProjectStatus, ProjectCreate_Pydantic, ProjectUser
+from app.services.project_service import ProjectService
+
 # Almacena el progreso del usuario
 user_project_creation = {}
 
@@ -25,6 +28,19 @@ async def crear_proyecto_command(update: Update, context: ContextTypes.DEFAULT_T
         text="📝 ¡Hola! Vamos a crear un nuevo proyecto.\n\nPor favor, envíame el *nombre del proyecto*:",
         parse_mode="Markdown"
     )
+
+async def misproyectos_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
+    user_id = update.effective_user.id
+
+    projects = await ProjectService.get_projects_by_user(update.effective_user.username)
+
+    await context.bot.send_message(
+        chat_id=user_id,
+        text=f"Estos son tus proyectos:\n @{projects}",
+        parse_mode="Markdown"
+    )
+
 
 async def handle_private_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -57,6 +73,17 @@ async def handle_private_message(update: Update, context: ContextTypes.DEFAULT_T
             text=f"🚀 Se ha creado un nuevo proyecto por @{update.effective_user.username}:\n\n*{name}*\n_{desc}_",
             parse_mode="Markdown"
         )
+
+        # Crear diccionario con los datos
+        project_data = {
+            "name": name,
+            "description": desc,
+            "telegram_chat_id": str(update.effective_chat.id)
+        }
+
+        # Validar y crear el proyecto usando el servicio
+        pydantic_data = ProjectCreate_Pydantic(**project_data)
+        new_project = await ProjectService.create_project(pydantic_data)
 
         # Limpiar estado
         del user_project_creation[user_id]
