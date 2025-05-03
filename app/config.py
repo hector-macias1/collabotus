@@ -16,7 +16,7 @@ class Settings:
 
     # LLM config
     GEMINI_KEY: str = os.getenv("GEMINI_KEY")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini-2.5-pro-exp-03-25")
+    LLM_MODEL: str = os.getenv("LLM_MODEL")
 
     # Additional config
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")

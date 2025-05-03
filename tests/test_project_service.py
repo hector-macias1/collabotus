@@ -2,7 +2,7 @@ import asyncio
 from tortoise import Tortoise
 from app.models.db import init_db
 from app.models.models import User, Project, ProjectUser, ProjectRole, ProjectStatus
-from app.services.project_service2 import ProjectService
+from app.services.project_service import ProjectService
 
 
 async def test_project_service():

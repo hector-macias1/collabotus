@@ -1,174 +1,409 @@
-from typing import List, Optional
-from fastapi import HTTPException, status
-from tortoise.exceptions import DoesNotExist, IntegrityError
-from tortoise.transactions import in_transaction
+from typing import List, Optional, Union, Dict, Any, Tuple
+from tortoise.exceptions import DoesNotExist
+from tortoise.transactions import atomic
+
 from app.models.models import (
-    User,
-    Project,
-    ProjectUser,
-    ProjectStatus,
-    ProjectRole,
-    SubscriptionType,
+    Project, User, ProjectUser, ProjectRole, ProjectStatus,
+    Project_Pydantic, ProjectCreate_Pydantic,
+    ProjectUser_Pydantic, ProjectUserCreate_Pydantic
 )
-from app.models.models import ProjectCreate_Pydantic, Project_Pydantic
 
 
 class ProjectService:
-    @staticmethod
-    async def create_project(telegram_user_id: str, project_data: ProjectCreate_Pydantic) -> Project_Pydantic:
-        """
-        Create a new project with all required validations
-        """
-        async with in_transaction():
-            try:
-                # 1. Validar usuario creador
-                creator = await User.get(usr_telegram=telegram_user_id)
-
-                # 2. Validar límite de proyectos para Free
-                if creator.subscription_type == SubscriptionType.FREE:
-                    admin_projects = await ProjectUser.filter(
-                        user=creator,
-                        role=ProjectRole.ADMIN
-                    ).count()
-                    if admin_projects >= 1:
-                        raise HTTPException(
-                            status_code=status.HTTP_403_FORBIDDEN,
-                            detail="Free users can only create one project"
-                        )
-
-                # 3. Crear proyecto base
-                project = await Project.create(
-                    name=project_data.name,
-                    description=project_data.description,
-                    telegram_chat_id=project_data.telegram_chat_id,
-                )
-
-                # 4. Asignar creador como ADMIN
-                await ProjectUser.create(
-                    project=project,
-                    user=creator,
-                    role=ProjectRole.ADMIN
-                )
-
-                # 5. Validar y agregar miembros iniciales
-                if project_data.initial_members:
-                    await ProjectService._add_members_with_validation(
-                        project=project,
-                        members=project_data.initial_members
-                    )
-
-                return await Project_Pydantic.from_tortoise_orm(project)
-
-            except IntegrityError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Database error: {str(e)}"
-                )
+    """
+    Service to manage operations related to projects.
+    """
 
     @staticmethod
-    async def _add_members_with_validation(project: Project, members: List[str]):
+    async def get_project_by_id(project_id: int) -> Optional[Project_Pydantic]:
         """
-        Internal method for adding members with validation
-        """
-        for telegram_id in members:
-            user = await User.get_or_none(usr_telegram=telegram_id)
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"User {telegram_id} not registered"
-                )
+        Gets a priject by its ID.
 
-            # Evitar duplicados
-            if not await ProjectUser.exists(project=project, user=user):
-                await ProjectUser.create(
-                    project=project,
-                    user=user,
-                    role=ProjectRole.MEMBER
-                )
+        Args:
+            project_id: Project ID
+
+        Returns:
+            Project details or None if not found
+        """
+        try:
+            project = await Project.get(id=project_id)
+            return await Project_Pydantic.from_tortoise_orm(project)
+        except DoesNotExist:
+            return None
 
     @staticmethod
-    async def get_project(project_id: int) -> Project_Pydantic:
+    async def get_projects_by_user(user_id: str) -> List[Project_Pydantic]:
         """
-        Gets all the project's related data in one go
+        Gets all projects where a given user participates.
+
+        Args:
+            user_id: User ID to filter by.
+
+        Returns:
+            List of projects where the given user participates
         """
-        project = await Project.get_or_none(id=project_id).prefetch_related(
-            "members",
-            "tasks",
-            "project_users__user"
+        user = await User.get(telegram_usr=user_id)
+        projects = await user.projects
+        print(projects)
+        return [await Project_Pydantic.from_tortoise_orm(project) for project in projects]
+
+    @staticmethod
+    async def get_projects_by_status(status: Union[ProjectStatus, str]) -> List[Project_Pydantic]:
+        """
+        Gets all projects with a specific status.
+
+        Args:
+            status: Project status (can be ProjectStatus enum or a string)
+
+        Returns:
+            List of projects with the specified status.
+        """
+        # Manejar tanto objetos Enum como valores de string
+        status_value = status.value if isinstance(status, ProjectStatus) else status
+        projects = await Project.filter(status=status_value)
+        return [await Project_Pydantic.from_tortoise_orm(project) for project in projects]
+
+    @staticmethod
+    async def get_user_role_in_project(user_id: str, project_id: int) -> Optional[ProjectRole]:
+        """
+        Gets the role of a user in a specific project.
+
+        Args:
+            user_id: User ID
+            project_id: Project ID to filter by.
+
+        Returns:
+            User role in a specific project or None if the user is not in the project.
+        """
+        try:
+            project_user = await ProjectUser.get(user_id=user_id, project_id=project_id)
+            return project_user.role
+        except DoesNotExist:
+            return None
+
+    @staticmethod
+    async def get_project_admin(project_id: int) -> Optional[str]:
+        """
+        Obtiene el ID del administrador de un proyecto.
+
+        Args:
+            project_id: ID del proyecto
+
+        Returns:
+            ID del usuario administrador o None si no hay administrador
+        """
+        try:
+            project_user = await ProjectUser.get(project_id=project_id, role=ProjectRole.ADMIN)
+            return project_user.user_id
+        except DoesNotExist:
+            return None
+
+    @staticmethod
+    async def get_project_members(project_id: int) -> List[Dict[str, Any]]:
+        """
+        Gets all members of a project with their roles.
+
+        Args:
+            project_id: project ID
+
+        Returns:
+            List of dictionaries with members information and their roles.
+        """
+        project_users = await ProjectUser.filter(project_id=project_id).prefetch_related('user')
+
+        members = []
+        for pu in project_users:
+            user_data = {
+                'user_id': pu.user.id,
+                'telegram_usr': pu.user.telegram_usr,
+                'first_name': pu.user.first_name,
+                'role': pu.role.value
+            }
+            members.append(user_data)
+
+        return members
+
+    @staticmethod
+    @atomic()
+    async def create_project(
+            project_data: Union[Dict[str, Any], ProjectCreate_Pydantic],
+            admin_user_id: str,
+            member_ids: Optional[List[str]] = None
+    ) -> Project_Pydantic:
+        """
+        Creates a new project with an admin and additional members (optional).
+
+        Args:
+            project_data: Project data to create
+            admin_user_id: user ID of the admin
+            member_ids: Optional list of user IDs to add as members (default: None)
+
+        Returns:
+            Created project
+
+        Raises:
+            DoesNotExist: If none of the users exist
+            ValueError: If there are problems with the project data
+        """
+        # Turn Enums into strings if it's a dictionary
+        if isinstance(project_data, Dict):
+            # If status is an Enum, convert it into a string
+            if 'status' in project_data and isinstance(project_data['status'], ProjectStatus):
+                project_data['status'] = project_data['status'].value
+
+            # Now we can use Pydantic to validate
+            project_data = ProjectCreate_Pydantic(**project_data)
+
+
+        # Verify that the admin exists
+        admin_user = await User.get(telegram_usr=admin_user_id)
+
+
+
+        # Create the project
+        project = await Project.create(
+            name=project_data.name,
+            description=project_data.description,
+            telegram_chat_id=project_data.telegram_chat_id,
+            status=project_data.status if hasattr(project_data, 'status') else ProjectStatus.ACTIVE.value
         )
-        if not project:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found"
-            )
-        return await Project_Pydantic.from_tortoise_orm(project)
 
-    @staticmethod
-    async def update_project_status(project_id: int, new_status: ProjectStatus) -> Project_Pydantic:
-        """
-        Update project status (only ADMIN)
-        """
-        project = await Project.get_or_none(id=project_id)
-        if not project:
-            raise HTTPException(status_code=404, detail="Project not found")
 
-        project.status = new_status
-        await project.save()
-        return await Project_Pydantic.from_tortoise_orm(project)
 
-    @staticmethod
-    async def add_project_member(project_id: int, telegram_id: str, role: ProjectRole = ProjectRole.MEMBER):
-        """
-        Adding a member to a project with validation of registration
-        """
-        async with in_transaction():
-            # Validar existencia de usuario
-            user = await User.get_or_none(usr_telegram=telegram_id)
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not registered"
-                )
+        existing_admin = await ProjectUser.filter(project=project, role=ProjectRole.ADMIN).exists()
+        if existing_admin:
+            raise ValueError("This project has already an assigned admin.")
 
-            # Validar proyecto
-            project = await Project.get_or_none(id=project_id)
-            if not project:
-                raise HTTPException(status_code=404, detail="Project not found")
+        # Assign the admin
+        await ProjectUser.create(
+            project=project,
+            user=admin_user,
+            role=ProjectRole.ADMIN
+        )
 
-            # Validar rol único de ADMIN
-            if role == ProjectRole.ADMIN:
-                existing_admin = await ProjectUser.filter(
-                    project=project,
-                    role=ProjectRole.ADMIN
-                ).exists()
+        # Add members if provided
+        if member_ids:
+            for member_id in member_ids:
+                # Verify if member exists
+                member = await User.get(id=member_id)
 
-                if existing_admin:
-                    raise HTTPException(
-                        status_code=status.HTTP_409_CONFLICT,
-                        detail="Project already has an admin"
+                # Don't add the admin as a regular member
+                if member.id != admin_user_id:
+                    await ProjectUser.create(
+                        project=project,
+                        user=member,
+                        role=ProjectRole.MEMBER
                     )
 
-            # Crear relación
+        return await Project_Pydantic.from_tortoise_orm(project)
+
+    @staticmethod
+    @atomic()
+    async def update_project(
+            project_id: int,
+            project_data: Dict[str, Any],
+            user_id: str
+    ) -> Optional[Project_Pydantic]:
+        """
+        Updates an existing project if the user has admin permissions.
+
+        Args:
+            project_id: project ID
+            project_data: project data to update
+            user_id: user ID to verify permissions (admin)
+
+        Returns:
+            Updated project or None if the user doesn't have permissions or the project doesn't exist.
+
+        Raises:
+            ValueError: If there are problems with the project data
+        """
+        try:
+            # Verify that the user is the project's admin
+            project_user = await ProjectUser.get(project_id=project_id, user_id=user_id)
+            if project_user.role != ProjectRole.ADMIN:
+                return None
+
+            # Get and update the project
+            project = await Project.get(id=project_id)
+
+            # Only update the provided fields
+            if 'name' in project_data:
+                project.name = project_data['name']
+            if 'description' in project_data:
+                project.description = project_data['description']
+            if 'status' in project_data:
+                # Manage Enum objects and string values
+                if isinstance(project_data['status'], ProjectStatus):
+                    project.status = project_data['status'].value
+                else:
+                    project.status = project_data['status']
+            if 'telegram_chat_id' in project_data:
+                project.telegram_chat_id = project_data['telegram_chat_id']
+
+            await project.save()
+            return await Project_Pydantic.from_tortoise_orm(project)
+
+        except DoesNotExist:
+            return None
+
+    @staticmethod
+    @atomic()
+    async def add_member_to_project(
+            project_id: int,
+            member_id: str,
+            admin_id: str
+    ) -> bool:
+        """
+        Add a member to a project, verifying that the requester is an admin.
+
+        Args:
+            project_id: project ID
+            member_id: user ID to add as member
+            admin_id: user ID of the requester
+
+        Returns:
+            True if added successfully, False otherwise
+        """
+        try:
+            # Verify that the requester is the admin
+            admin_role = await ProjectUser.get(project_id=project_id, user_id=admin_id, role=ProjectRole.ADMIN)
+
+            # Verify if the project exists
+            project = await Project.get(id=project_id)
+
+            # Verify that member exists
+            member = await User.get(id=member_id)
+
+            # Verify that the member is not already in the project
+            existing = await ProjectUser.filter(project_id=project_id, user_id=member_id).exists()
+            if existing:
+                return False
+
+            # Add the member to the project
             await ProjectUser.create(
                 project=project,
-                user=user,
-                role=role
+                user=member,
+                role=ProjectRole.MEMBER
             )
 
-            return {"message": "Member added successfully"}
+            return True
+
+        except DoesNotExist:
+            return False
 
     @staticmethod
-    async def get_projects_by_user(telegram_id: str) -> List[Project_Pydantic]:
+    @atomic()
+    async def remove_member_from_project(
+            project_id: int,
+            member_id: str,
+            admin_id: str
+    ) -> bool:
         """
-        Getss all the projects of a user with their role
+        Deletes a member from the project, verifying that the requester is an admin.
+
+        Args:
+            project_id: project ID
+            member_id: meber ID to remove
+            admin_id: ID of the admin user who authorizes the action
+
+        Returns:
+            True if removed successfully, False otherwise
         """
-        user = await User.get_or_none(usr_telegram=telegram_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+        try:
+            # Verify that the requester is the admin
+            admin_role = await ProjectUser.get(project_id=project_id, user_id=admin_id, role=ProjectRole.ADMIN)
 
-        projects = await ProjectUser.filter(user=user).prefetch_related(
-            "project",
-            "project__tasks"
-        )
+            # Don't allow removing the admin from the project
+            if member_id == admin_id:
+                return False
 
-        return [await Project_Pydantic.from_tortoise_orm(p.project) for p in projects]
+            # Verify that the member exists in the project
+            member_role = await ProjectUser.get(project_id=project_id, user_id=member_id)
+
+            # Delete the member from the project
+            await member_role.delete()
+
+            return True
+
+        except DoesNotExist:
+            return False
+
+    @staticmethod
+    @atomic()
+    async def change_project_admin(
+            project_id: int,
+            new_admin_id: str,
+            current_admin_id: str
+    ) -> bool:
+        """
+        Changes the admin of a project, verifying that the requester is the current admin.
+
+        Args:
+            project_id: project ID
+            new_admin_id: new admin ID to assign
+            current_admin_id: current admin ID
+
+        Returns:
+            True if the admin was changed successfully, False otherwise.
+        """
+        try:
+            # Verify that the requester is the current admin
+            current_admin = await ProjectUser.get(
+                project_id=project_id,
+                user_id=current_admin_id,
+                role=ProjectRole.ADMIN
+            )
+
+            # Verify that the new admin exists and is already a member of the project
+            new_admin_member = await ProjectUser.get(project_id=project_id, user_id=new_admin_id)
+
+            # Change roles
+            current_admin.role = ProjectRole.MEMBER
+            await current_admin.save()
+
+            new_admin_member.role = ProjectRole.ADMIN
+            await new_admin_member.save()
+
+            return True
+
+        except DoesNotExist:
+            return False
+
+    @staticmethod
+    @atomic()
+    async def delete_project(project_id: int, admin_id: str) -> bool:
+        """
+        Deletes a project and all its relations, verifying that the requester is an admin.
+
+        Args:
+            project_id: project ID to delete
+            admin_id: admin ID who authorized the action
+
+        Returns:
+            True if the project was deleted successfully, False otherwise.
+        """
+        try:
+            # Verify that the requester is the admin
+            admin_role = await ProjectUser.get(
+                project_id=project_id,
+                user_id=admin_id,
+                role=ProjectRole.ADMIN
+            )
+
+            # Get the project
+            project = await Project.get(id=project_id)
+
+            # Deletes all user-project relations for the project
+            await ProjectUser.filter(project_id=project_id).delete()
+
+            # Delete all tasks for the project (if there are any)
+            await project.tasks.all().delete()
+
+            # Delete the project
+            await project.delete()
+
+            return True
+
+        except DoesNotExist:
+            return False

@@ -2,7 +2,7 @@ import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes, CallbackQueryHandler
 
-from app.models.models import Skill, SkillType
+from app.models.models import Skill, SkillType, User
 from app.services.survey_service import save_user_skill, save_user_skill_by_question_key
 
 survey = [
@@ -29,6 +29,7 @@ user_survey_progress = {}
 async def registro_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     user_survey_progress[chat_id] = {"current": 0, "answers": {}}
+    await context.bot.send_message(chat_id=chat_id, text="Vamos a registrar tus habilidades.")
     await send_next_question(chat_id, context)
 
 async def send_next_question(chat_id, context):
@@ -69,9 +70,10 @@ async def handle_survey_response(update: Update, context: ContextTypes.DEFAULT_T
         user_data["answers"][key] = value
         user_data["current"] += 1
 
-        # Guardar en base de datos
+        # Save in db
         try:
             skill_type = skill_mapping.get(key)
+            #print("Skill type: ", skill_type)
             if skill_type:
                 telegram_username = query.from_user.username
                 await save_user_skill_by_question_key(telegram_username, key, value, update_existing=True)
