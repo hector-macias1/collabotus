@@ -29,7 +29,10 @@ user_survey_progress = {}
 async def registro_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     user_survey_progress[chat_id] = {"current": 0, "answers": {}}
-    await context.bot.send_message(chat_id=chat_id, text="Vamos a registrar tus habilidades.")
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text="Vamos a registrar tus habilidades."
+    )
     await send_next_question(chat_id, context)
 
 async def send_next_question(chat_id, context):
@@ -55,7 +58,11 @@ async def send_next_question(chat_id, context):
         for opt in q["options"]
     ]
     reply_markup = InlineKeyboardMarkup(buttons)
-    await context.bot.send_message(chat_id=chat_id, text=q["question"], reply_markup=reply_markup)
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=q["question"],
+        reply_markup=reply_markup
+    )
 
 async def handle_survey_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -75,9 +82,12 @@ async def handle_survey_response(update: Update, context: ContextTypes.DEFAULT_T
             skill_type = skill_mapping.get(key)
             #print("Skill type: ", skill_type)
             if skill_type:
-                telegram_username = query.from_user.username
-                await save_user_skill_by_question_key(telegram_username, key, value, update_existing=True)
+                user_id = query.from_user.id
+                await save_user_skill_by_question_key(user_id, key, value, update_existing=True)
         except Exception as e:
-            await context.bot.send_message(chat_id=chat_id, text=f"❌ Error guardando la respuesta: {e}")
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"❌ Error guardando la respuesta: {e}"
+            )
 
         await send_next_question(chat_id, context)

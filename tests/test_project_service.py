@@ -8,22 +8,22 @@ from app.services.project_service import ProjectService
 async def test_project_service():
     print("Initializing ProjectService testing...")
 
-    # Crear usuarios de prueba
+    # Create sample users
     admin_user, created = await User.get_or_create(
-        id="2",
-        telegram_usr="admin_telegram",
+        id=100000001,
+        username="admin_telegram",
         first_name="Admin User"
     )
 
     member1, created = await User.get_or_create(
-        id="3",
-        telegram_usr="member1_telegram",
+        id=100000002,
+        username="member1",
         first_name="Member One"
     )
 
     member2, created = await User.get_or_create(
-        id="4",
-        telegram_usr="member2_telegram",
+        id=100000003,
+        username="member2",
         first_name="Member Two"
     )
 
@@ -66,6 +66,7 @@ async def test_project_service():
     # 4. Check a user's role in the project
     print("\n4. Verifying user's role...")
     admin_role = await ProjectService.get_user_role_in_project(admin_user.id, new_project.id)
+    print(admin_role)
     print(f"{admin_user.first_name}'s role: {admin_role.value}")
 
     member_role = await ProjectService.get_user_role_in_project(member1.id, new_project.id)
@@ -104,8 +105,8 @@ async def test_project_service():
     # 6. Add new member
     print("\n6. Creating new user and adding it to the project...")
     new_member = await User.create(
-        id="5",
-        telegram_usr="new_member_telegram",
+        id=100000004,
+        username="new_member",
         first_name="New Member"
     )
 
@@ -116,7 +117,7 @@ async def test_project_service():
     )
 
     if success:
-        print(f"Usuario {new_member.first_name} agregado correctamente")
+        print(f"User {new_member.first_name} successfully added")
 
         # Verify updated members
         updated_members = await ProjectService.get_project_members(new_project.id)
@@ -144,7 +145,7 @@ async def test_project_service():
     # 8. Get projects from a user
     print("\n8. Getting projects from a user...")
     user_projects = await ProjectService.get_projects_by_user(member1.id)
-    print(f"Projects win which {member1.first_name} participates:")
+    print(f"Projects where {member1.first_name} participates:")
     for proj in user_projects:
         print(f"- {proj.name} (ID: {proj.id})")
 

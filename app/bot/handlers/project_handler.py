@@ -33,7 +33,7 @@ async def misproyectos_command(update: Update, context: ContextTypes.DEFAULT_TYP
     chat = update.effective_chat
     user_id = update.effective_user.id
 
-    projects = await ProjectService.get_projects_by_user(update.effective_user.username)
+    projects = await ProjectService.get_projects_by_user(update.effective_user.id)
 
     if not projects:
         await context.bot.send_message(
@@ -98,7 +98,7 @@ async def handle_private_message(update: Update, context: ContextTypes.DEFAULT_T
 
         new_project = await ProjectService.create_project(
             project_data=project_data,
-            admin_user_id=update.effective_user.username,
+            admin_user_id=update.effective_user.id,
             member_ids=[]
         )
 

@@ -2,44 +2,44 @@ from tortoise.exceptions import IntegrityError
 from tortoise.transactions import in_transaction
 
 from app.models.models import User, Skill, UserSkill, SubscriptionType, UserCreate_Pydantic
-from app.models.models import UserCreate_Pydantic  # Schema Pydantic para validación
+from app.models.models import UserCreate_Pydantic  # Pydantic schema for validation
 from typing import Optional, List
 
 
 class UserService:
     @staticmethod
-    async def create_or_update_user(telegram_id: str, username: str, first_name: str) -> User:
+    async def create_or_update_user(telegram_id: int, username: str, first_name: str) -> User:
         user, created = await User.get_or_create(
             id=telegram_id,
             defaults={
-                'telegram_usr': username,
+                'username': username,
                 'first_name': first_name,
                 'subscription_type': SubscriptionType.FREE.value
             }
         )
         if not created:
-            user.telegram_usr = username
+            user.username = username
             user.first_name = first_name
             await user.save()
         return user
 
     @staticmethod
-    async def update_user_skills(telegram_id: str, skills_data: List[dict]) -> User:
+    async def update_user_skills(telegram_id: int, skills_data: List[dict]) -> User:
         user = await User.get(id=telegram_id).prefetch_related('skills')
 
-        # Procesar habilidades
+        # Process skills
         for skill_info in skills_data:
             skill_type = skill_info['type']
             skill_name = skill_info['name']
             skill_value = skill_info['value']
 
-            # Crear o obtener habilidad
+            # Create or get skill
             skill, _ = await Skill.get_or_create(
                 name=skill_name,
                 defaults={'type': skill_type}
             )
 
-            # Actualizar relación usuario-habilidad
+            # Update UserSkill relation
             await UserSkill.update_or_create(
                 user=user,
                 skill=skill,
@@ -49,8 +49,8 @@ class UserService:
         return await user.fetch_related('skills')
 
     @staticmethod
-    async def complete_registration(telegram_id: str, survey_data: dict) -> User:
-        # Validar datos con Pydantic
+    async def complete_registration(telegram_id: int, survey_data: dict) -> User:
+        # Validate data with pydantic
         user_data = UserCreate_Pydantic(**survey_data)
 
         async with in_transaction():

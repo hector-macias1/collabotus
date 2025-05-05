@@ -32,7 +32,7 @@ class ProjectService:
             return None
 
     @staticmethod
-    async def get_projects_by_user(user_id: str) -> List[Project_Pydantic]:
+    async def get_projects_by_user(user_id: int) -> List[Project_Pydantic]:
         """
         Gets all projects where a given user participates.
 
@@ -42,7 +42,7 @@ class ProjectService:
         Returns:
             List of projects where the given user participates
         """
-        user = await User.get(telegram_usr=user_id)
+        user = await User.get(id=user_id)
         projects = await user.projects
         print(projects)
         return [await Project_Pydantic.from_tortoise_orm(project) for project in projects]
@@ -64,7 +64,7 @@ class ProjectService:
         return [await Project_Pydantic.from_tortoise_orm(project) for project in projects]
 
     @staticmethod
-    async def get_user_role_in_project(user_id: str, project_id: int) -> Optional[ProjectRole]:
+    async def get_user_role_in_project(user_id: int, project_id: int) -> Optional[ProjectRole]:
         """
         Gets the role of a user in a specific project.
 
@@ -84,17 +84,17 @@ class ProjectService:
     @staticmethod
     async def get_project_admin(project_id: int) -> Optional[str]:
         """
-        Obtiene el ID del administrador de un proyecto.
+        Gets the ID of the admin of a project.
 
         Args:
-            project_id: ID del proyecto
+            project_id: project ID to filter by.
 
         Returns:
-            ID del usuario administrador o None si no hay administrador
+            User ID of the admin or None if there is no admin.
         """
         try:
             project_user = await ProjectUser.get(project_id=project_id, role=ProjectRole.ADMIN)
-            return project_user.user_id
+            return project_user.user.id
         except DoesNotExist:
             return None
 
@@ -115,7 +115,7 @@ class ProjectService:
         for pu in project_users:
             user_data = {
                 'user_id': pu.user.id,
-                'telegram_usr': pu.user.telegram_usr,
+                'username': pu.user.username,
                 'first_name': pu.user.first_name,
                 'role': pu.role.value
             }
@@ -127,8 +127,8 @@ class ProjectService:
     @atomic()
     async def create_project(
             project_data: Union[Dict[str, Any], ProjectCreate_Pydantic],
-            admin_user_id: str,
-            member_ids: Optional[List[str]] = None
+            admin_user_id: int,
+            member_ids: Optional[List[int]] = None
     ) -> Project_Pydantic:
         """
         Creates a new project with an admin and additional members (optional).
@@ -156,7 +156,7 @@ class ProjectService:
 
 
         # Verify that the admin exists
-        admin_user = await User.get(telegram_usr=admin_user_id)
+        admin_user = await User.get(id=admin_user_id)
 
 
 
@@ -184,8 +184,8 @@ class ProjectService:
         # Add members if provided
         if member_ids:
             for member_id in member_ids:
-                # Verify if member exists
-                member = await User.get(id=member_id)
+                # Check if member exists
+                member = await User.get(id=member_id) # CHANGE TO INT ID to iterate
 
                 # Don't add the admin as a regular member
                 if member.id != admin_user_id:
@@ -202,7 +202,7 @@ class ProjectService:
     async def update_project(
             project_id: int,
             project_data: Dict[str, Any],
-            user_id: str
+            user_id: int
     ) -> Optional[Project_Pydantic]:
         """
         Updates an existing project if the user has admin permissions.
@@ -251,8 +251,8 @@ class ProjectService:
     @atomic()
     async def add_member_to_project(
             project_id: int,
-            member_id: str,
-            admin_id: str
+            member_id: int,
+            admin_id: int
     ) -> bool:
         """
         Add a member to a project, verifying that the requester is an admin.
@@ -296,8 +296,8 @@ class ProjectService:
     @atomic()
     async def remove_member_from_project(
             project_id: int,
-            member_id: str,
-            admin_id: str
+            member_id: int,
+            admin_id: int
     ) -> bool:
         """
         Deletes a member from the project, verifying that the requester is an admin.
@@ -333,8 +333,8 @@ class ProjectService:
     @atomic()
     async def change_project_admin(
             project_id: int,
-            new_admin_id: str,
-            current_admin_id: str
+            new_admin_id: int,
+            current_admin_id: int
     ) -> bool:
         """
         Changes the admin of a project, verifying that the requester is the current admin.
@@ -372,7 +372,7 @@ class ProjectService:
 
     @staticmethod
     @atomic()
-    async def delete_project(project_id: int, admin_id: str) -> bool:
+    async def delete_project(project_id: int, admin_id: int) -> bool:
         """
         Deletes a project and all its relations, verifying that the requester is an admin.
 

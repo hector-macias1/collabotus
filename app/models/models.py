@@ -39,8 +39,8 @@ class ProjectRole(str, Enum):
 
 # Models -----------------------------------------------------------------------
 class User(models.Model):
-    id = fields.CharField(pk=True, max_length=100)
-    telegram_usr = fields.CharField(max_length=100, unique=True)
+    id = fields.IntField(pk=True)
+    username = fields.CharField(max_length=100, unique=True)
     first_name = fields.CharField(max_length=100)
     subscription_type = fields.CharEnumField(SubscriptionType, default=SubscriptionType.FREE)
     created_at = fields.DatetimeField(auto_now_add=True)

@@ -7,12 +7,12 @@ from app.models.models import User, Skill, UserSkill, SkillType
     UserSkill_Pydantic, UserSkillCreate_Pydantic
 )"""
 
-async def save_user_skill(telegram_username: str, skill_type: SkillType, skill_value: str):
+async def save_user_skill(user_id: int, skill_type: SkillType, skill_value: str):
     try:
-        user = await User.get(telegram_usr=telegram_username)
+        user = await User.get(id=user_id)
         print(User.all())
     except DoesNotExist:
-        raise ValueError(f"Usuario con telegram_usr={telegram_username} no encontrado")
+        raise ValueError(f"Usuario con user_id={user_id} no encontrado")
 
     # Buscar o crear skill en el catálogo
     skill, _ = await Skill.get_or_create(name=skill_type, defaults={"type": skill_type})
@@ -25,11 +25,11 @@ QUESTION_KEY_TO_TYPE = {
     "framework": SkillType.FRAMEWORK,
 }
 
-async def save_user_skill_by_question_key(telegram_username: str, question_key: str, skill_name: str, update_existing: bool = True):
+async def save_user_skill_by_question_key(user_id: int, question_key: str, skill_name: str, update_existing: bool = True):
     try:
-        user = await User.get(telegram_usr=telegram_username)
+        user = await User.get(id=user_id)
     except DoesNotExist:
-        raise ValueError(f"Usuario con telegram_usr={telegram_username} no encontrado")
+        raise ValueError(f"Usuario con user_id={user_id} no encontrado")
 
     print(question_key)
     skill_type = QUESTION_KEY_TO_TYPE.get(question_key)

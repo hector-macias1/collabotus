@@ -27,9 +27,9 @@ async def handle_survey_response2(update: Update, context: ContextTypes.DEFAULT_
         user_data["current"] += 1
 
         try:
-            telegram_username = query.from_user.username
+            user_id = query.from_user.id
             #mode = user_data.get("mode", "register")
-            await save_user_skill_by_question_key(telegram_username, key, value, update_existing=True)
+            await save_user_skill_by_question_key(user_id, key, value, update_existing=True)
         except Exception as e:
             await context.bot.send_message(chat_id=chat_id, text=f"❌ Error guardando la respuesta: {e}")
 
