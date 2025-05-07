@@ -15,7 +15,7 @@ class Settings:
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/project_bot")
 
     # LLM config
-    GEMINI_KEY: str = os.getenv("GEMINI_KEY")
+    GEMINI_KEY: str = os.getenv("GEMINI_API_KEY")
     LLM_MODEL: str = os.getenv("LLM_MODEL")
 
     # Additional config
