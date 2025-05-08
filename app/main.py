@@ -9,6 +9,7 @@ from app.config import settings
 from app.models.db import init_db, close_db
 from app.bot.handlers.base_handlers import start_command, ayuda_command, handle_message
 from app.bot.handlers.register_handler import registro_command, handle_survey_response
+from app.bot.handlers.llm.nlp_handler import NLPHandler
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -49,6 +50,7 @@ async def startup_event():
     await init_db()
 
     if settings.TELEGRAM_TOKEN and settings.WEBHOOK_URL and settings.WEBHOOK_SECRET:
+        nlp_handler = NLPHandler(api_key=settings.GEMINI_KEY, model=settings.LLM_MODEL)
         # Configure Telegram application
         telegram_application = (
             ApplicationBuilder()
@@ -69,7 +71,11 @@ async def startup_event():
         telegram_application.add_handler(CommandHandler("actualizar_habilidades", actualizar_habilidades_command))
         telegram_application.add_handler(CallbackQueryHandler(handle_survey_response))
 
-        telegram_application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_private_message))
+        #telegram_application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_private_message))
+        telegram_application.add_handler(MessageHandler(
+            filters.TEXT & (filters.ChatType.PRIVATE | filters.ChatType.GROUP),
+            nlp_handler.handle_message
+        ))
 
         # Initialize app
         await telegram_application.initialize()

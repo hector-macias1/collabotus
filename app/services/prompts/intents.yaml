@@ -1,0 +1,17 @@
+actualizar_habilidades: |
+  Clasifica si el usuario quiere actualizar sus habilidades. 
+  Responde SOLO con "actualizar_habilidades" o "otras".
+  Mensaje del usuario: "{user_message}"
+
+crear_proyecto: |
+  Detecta si la intención es crear un proyecto. 
+  Responde SOLO con "crear_proyecto" o "otras".
+  Mensaje del usuario: "{user_message}"
+
+ayuda: |
+  Identifica si el usuario solicita ayuda. 
+  Responde SOLO con "ayuda" o "otras".
+  Mensaje del usuario: "{user_message}"
+
+otro: |
+  Identifica si el usuario
