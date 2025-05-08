@@ -113,7 +113,7 @@ async def handle_private_message(update: Update, context: ContextTypes.DEFAULT_T
         project_data = {
             "name": name,
             "description": desc,
-            "telegram_chat_id": str(update.effective_chat.id)
+            "telegram_chat_id": str(group_id)
         }
 
         new_project = await ProjectService.create_project(
@@ -124,3 +124,31 @@ async def handle_private_message(update: Update, context: ContextTypes.DEFAULT_T
 
         # Clean state
         del user_project_creation[user_id]
+
+async def handle_nlp_project(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    message = update.message.text
+    chat_id = update.effective_chat.id
+
+    data = context.user_data.get("project_data", {})
+
+    name = data.get("nombre")
+    description = data.get("descripcion")
+
+    project_data = {
+        "name": name,
+        "description": description,
+        "telegram_chat_id": str(chat_id)
+    }
+
+    new_project = await ProjectService.create_project(
+        project_data=project_data,
+        admin_user_id=update.effective_user.id,
+        member_ids=[]
+    )
+
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=f"🚀 Se ha creado un nuevo proyecto por @{update.effective_user.username}:\n\n*{name}*\n_{description}_",
+        parse_mode="Markdown"
+    )

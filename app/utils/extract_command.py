@@ -2,7 +2,7 @@ import re
 from telegram import Update
 from app.config import settings
 
-async def extract_entities(update: Update, command: str):
+async def extract_command(update: Update, command: str):
     message = update.message
 
     if message.entities:
@@ -13,9 +13,6 @@ async def extract_entities(update: Update, command: str):
                 if mention_text.lower() == f"@{settings.BOT_USERNAME}".lower():
                     # Extraer el texto después de la mención
                     remaining_text = message.text[entity.offset + entity.length:].strip()
-                    # Buscar el comando (con o sin '/')
-                    command_match = re.match(r'^/?(\w+)', remaining_text)
-                    if command_match:
-                        command = command_match.group(1).lower()
-                    break
+                    print("\n\nMENSAJE: ", remaining_text)
+                    return remaining_text
     return command

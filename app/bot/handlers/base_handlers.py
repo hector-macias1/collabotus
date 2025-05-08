@@ -56,6 +56,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = start_message,
         parse_mode='Markdown'
     )
+
+    await update.message.reply_text(f"El chat ID de este grup es: {chat_id}")
     
 async def ayuda_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Manage /ayuda command"""

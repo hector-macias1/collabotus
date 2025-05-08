@@ -1,46 +1,42 @@
+import re
 from telegram import Update
 from telegram.ext import ContextTypes, MessageHandler, filters
 from app.bot.handlers.llm.intent_classifier import IntentClassifier
 from app.bot.handlers.llm.intent_resolver import IntentResolver
+from app.utils.extract_command import extract_command
+
+BOT_USERNAME = "CollabotusBot"
 
 class NLPHandler:
-    def __init__(self, api_key: str, model: str):
+    def __init__(self, api_key: str, model:str):
         self.classifier = IntentClassifier(api_key, model)
         self.resolver = IntentResolver()
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        # Verify if it's a mention in a group or a private message
-        #is_private = update.message.chat.type == "private"
-        is_private = update.message.chat.type
-        print("CHAT TYPE ", is_private)
-
         user_message = update.message.text
 
-        is_mention = (
-            not is_private
-            and update.message.entities
-            and any(entity.type == "mention" for entity in update.message.entities)
-        )
+        chat_type = update.message.chat.type
+        command = None
 
-        if not (is_private or is_mention):
-            await update.message.reply_text("⚠️ Este comando solo está disponible en chats privados.")
-            return  # Ignore messages in groups without mention
+        # En grupo o supergrupo: buscar mención y comando
+        if chat_type in ["group", "supergroup"]:
+            clean_message = await extract_command(update, command)
+            # Clasificar y resolver intención
+            intent = await self.classifier.classify(clean_message)
+            await self.resolver.resolve(intent, update, context)
+            return
 
-        # Extract text without mention (@bot)
-        #user_message = update.message.text
-        if is_mention:
-            user_message = user_message.replace("@bot", "").strip()
-            print("EXTRACTED MESSAGE: ", user_message)
+            # En chats privados: extraer directamente
+        if chat_type == "private":
+            clean_message = user_message.strip()
 
-        if is_private:
-            if not user_message.startswith("?"):
-                await update.message.reply_text(
-                    "📝 Si quieres que procese tu mensaje con inteligencia artificial, comienza el mensaje con `?`.\n\n"
-                    "Ejemplo: `? quiero actualizar mis habilidades`"
-                )
-                return
-            user_message = user_message.lstrip("?").strip()
+        if not user_message.startswith("?"):
+            await update.message.reply_text(
+                "📝 Si quieres que procese tu mensaje con inteligencia artificial, comienza el mensaje con `?`.\n\n"
+                "Ejemplo: `? quiero actualizar mis habilidades`"
+            )
+            return
 
-        # Classify and resolve intent
-        intent = await self.classifier.classify(user_message)
+        # Clasificar y resolver intención
+        intent = await self.classifier.classify(clean_message)
         await self.resolver.resolve(intent, update, context)

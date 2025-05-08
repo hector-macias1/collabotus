@@ -8,10 +8,14 @@ crear_proyecto: |
   Responde SOLO con "crear_proyecto" o "otras".
   Mensaje del usuario: "{user_message}"
 
+agregar_tarea: |
+  Detecta si la intencion es agregar una tarea.
+  Responde SOLO con "agregar_tarea" o "otras".
+
 ayuda: |
   Identifica si el usuario solicita ayuda. 
   Responde SOLO con "ayuda" o "otras".
   Mensaje del usuario: "{user_message}"
 
 otro: |
-  Identifica si el usuario
+  Solamente responde "ayuda"
