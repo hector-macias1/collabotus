@@ -17,7 +17,7 @@ class ProjectService:
     @staticmethod
     async def get_project_by_id(project_id: int) -> Optional[Project_Pydantic]:
         """
-        Gets a priject by its ID.
+        Gets a project by its ID.
 
         Args:
             project_id: Project ID
@@ -27,6 +27,23 @@ class ProjectService:
         """
         try:
             project = await Project.get(id=project_id)
+            return await Project_Pydantic.from_tortoise_orm(project)
+        except DoesNotExist:
+            return None
+
+    @staticmethod
+    async def get_project_by_chat_id(chat_id: str) -> Optional[Project_Pydantic]:
+        """
+        Gets a project by its chatID.
+
+        Args:
+            project_id: Project ID
+
+        Returns:
+            Project details or None if not found
+        """
+        try:
+            project = await Project.get(telegram_chat_id=chat_id)
             return await Project_Pydantic.from_tortoise_orm(project)
         except DoesNotExist:
             return None
@@ -398,7 +415,7 @@ class ProjectService:
             await ProjectUser.filter(project_id=project_id).delete()
 
             # Delete all tasks for the project (if there are any)
-            await project.tasks.all().delete()
+            #await project.tasks.all().delete()
 
             # Delete the project
             await project.delete()

@@ -55,6 +55,26 @@ async def misproyectos_command(update: Update, context: ContextTypes.DEFAULT_TYP
             text=f"{project.name}\n",
         )
 
+async def finalizarproyecto_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
+    user_id = update.effective_user.id
+
+    project = await ProjectService.get_project_by_chat_id(str(chat.id))
+    if not project:
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=f"No tienes ningun proyecto en este chat.\nPuedes crear uno usando el comando /crear_proyecto.",
+            parse_mode="Markdown"
+        )
+        return
+
+    try:
+        await ProjectService.delete_project(project.id, user_id)
+        await update.message.reply_text(f"Proyecto {project.name} eliminado exitosamente.")
+    except Exception as e:
+        await update.message.reply_text(f"Error al eliminar el proyecto: {e}")
+
+
 
 async def handle_private_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
