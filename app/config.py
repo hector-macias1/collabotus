@@ -8,6 +8,8 @@ class Settings:
     PROJECT_NAME: str = "Collabotus"
     PROJECT_VERSION: str = "0.1.0"
 
+    BOT_USERNAME: str = os.getenv("BOT_USERNAME")
+
     TELEGRAM_TOKEN: str = os.getenv("TELEGRAM_TOKEN")
     WEBHOOK_URL: str = os.getenv("WEBHOOK_URL")
     WEBHOOK_SECRET: str = os.getenv("WEBHOOK_SECRET", "")
