@@ -8,22 +8,27 @@ from app.utils.extract_data import extract_project_data
 class IntentResolver:
     INTENT_HANDLERS = {
         "actualizar_habilidades": actualizar_habilidades_command,
-        "crear_proyecto": handle_nlp_project,
+        "crear_proyecto": crear_proyecto_command,
+        "crear_proyecto_nlp": handle_nlp_project,
         "ayuda": ayuda_command,
     }
 
     async def resolve(self, intent: str, update: Update, context: ContextTypes.DEFAULT_TYPE):
         handler = self.INTENT_HANDLERS.get(intent)
+
         if not handler:
             return
 
         text = update.message.text
+        print("USER MESSAGE: ", text)
 
-        # Extraer parámetros según la intención
-        if intent == "crear_proyecto":
-            params = extract_project_data(text)
+        # Extract parameters based on the intent
+        if intent == "crear_proyecto_nlp":
+            params = await extract_project_data(text)
             context.user_data["project_data"] = params
+            print("PARAMS: ", params)
 
+        print("this command will be executed: ", handler.__name__)
         await handler(update, context)
 
         # Verify if command requires private chat

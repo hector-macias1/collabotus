@@ -130,10 +130,18 @@ async def handle_nlp_project(update: Update, context: ContextTypes.DEFAULT_TYPE)
     message = update.message.text
     chat_id = update.effective_chat.id
 
+    if update.effective_chat.type != ChatType.GROUP and update.effective_chat.type != ChatType.SUPERGROUP:
+        await update.message.reply_text("❗ Este comando solo puede usarse desde un chat grupal.")
+        return
+
     data = context.user_data.get("project_data", {})
 
     name = data.get("nombre")
     description = data.get("descripcion")
+
+    if name or description is None:
+        await update.message.reply_text("❗ Para crear un proyecto necesito que me des un nombre y su descripción.")
+        return
 
     project_data = {
         "name": name,

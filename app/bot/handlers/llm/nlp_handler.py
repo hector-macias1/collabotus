@@ -18,15 +18,17 @@ class NLPHandler:
         chat_type = update.message.chat.type
         command = None
 
-        # En grupo o supergrupo: buscar mención y comando
+        clean_message = None
+
+        # In group or supergroup: find mention and command
         if chat_type in ["group", "supergroup"]:
             clean_message = await extract_command(update, command)
-            # Clasificar y resolver intención
+            # Classify and resolve intent
             intent = await self.classifier.classify(clean_message)
             await self.resolver.resolve(intent, update, context)
             return
 
-            # En chats privados: extraer directamente
+        # Extract directly if in private chat
         if chat_type == "private":
             clean_message = user_message.strip()
 
@@ -37,6 +39,7 @@ class NLPHandler:
             )
             return
 
-        # Clasificar y resolver intención
+        # Classify and solve intent
         intent = await self.classifier.classify(clean_message)
+        print("INTENT: ", intent)
         await self.resolver.resolve(intent, update, context)

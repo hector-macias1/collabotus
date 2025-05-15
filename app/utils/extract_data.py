@@ -1,11 +1,18 @@
+import json
 import re
+import json
 
-def extract_project_data(text: str) -> dict:
-    # Puedes usar regex o un modelo más avanzado
-    name_match = re.search(r"llame\s+(.*?)\s*(,|\.)", text)
-    desc_match = re.search(r"descripcion\s+es\s+(.*)", text)
+from app.config import Settings
+from app.services.gemini_service import GeminiService
+from app.utils.load_prompt import LoadPrompt
 
-    return {
-        "nombre": name_match.group(1) if name_match else "Sin nombre",
-        "descripcion": desc_match.group(1) if desc_match else "Sin descripción"
-    }
+async def extract_project_data(text: str) -> dict:
+    llm = GeminiService(Settings.GEMINI_KEY, Settings.LLM_MODEL)
+
+    prompt = LoadPrompt.load_prompt("app/services/prompts/params.txt")
+    #print("\n\n\n\n\n\nPROMPT FOR PARAMS: ", prompt.format(user_message=text))
+    response = await llm.detect_intent(text=prompt, intent_prompt=text)
+    #print("RESPONSE FOR PARAMS: ", (str(response)))
+    #print(response)
+    #print("JSON FINAL: ", json.loads(str(response)))
+    return json.loads(str(response))

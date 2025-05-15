@@ -12,12 +12,12 @@ class GeminiService:
 
     async def detect_intent(self, text: str, intent_prompt: str) -> Optional[str]:
         try:
-            print("SE VA A PROCESAR LA RESPUESTA DE ESTE PROMPT: ", text.format(user_message=intent_prompt))
+            print("WILL PROCESS THE RESPONSE FOR THIS PROMPT: ", text.format(user_message=intent_prompt))
             response = self.client.models.generate_content(
                 model=self.model,
                 contents=text.format(user_message=intent_prompt)
             )
-            print("RESPUESTA: ", response)
+            print("RESPONSE: ", response.text)
             return response.text.strip().lower()
         except Exception as e:
             logging.error(f"Gemini Service ERROR: {e}")
