@@ -1,8 +1,10 @@
 import asyncio
 from tortoise import Tortoise
+from datetime import datetime, timedelta
 from app.models.db import init_db
-from app.models.models import User, Project, ProjectUser, ProjectRole, ProjectStatus
+from app.models.models import User, Project, ProjectUser, ProjectRole, ProjectStatus, Task
 from app.services.project_service import ProjectService
+from app.services.task_service import TaskService
 
 
 async def test_project_service():
@@ -165,6 +167,18 @@ async def test_project_service():
         print("Final members:")
         for member in final_members:
             print(f"- {member['first_name']} ({member['role']})")
+
+    #10. Create a new Task
+    print("\n10. Creating a new Task...")
+    task1, created = await Task.get_or_create(
+        name="Task 1",
+        description="This is a task",
+        deadline=datetime.now() + timedelta(days=1),
+        project_id=new_project.id,
+        assigned_user_id=member1.id
+    )
+
+    print(f"Task created: {task1.name} (ID: {task1.id})")
 
     print("\nTest completed with success.")
 

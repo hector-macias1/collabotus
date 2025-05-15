@@ -59,6 +59,10 @@ async def finalizarproyecto_command(update: Update, context: ContextTypes.DEFAUL
     chat = update.effective_chat
     user_id = update.effective_user.id
 
+    if chat.type != ChatType.GROUP and chat.type != ChatType.SUPERGROUP:
+        await update.message.reply_text("❗ Sólo puedes eliminar un proyecto desde un chat grupal.")
+        return
+
     project = await ProjectService.get_project_by_chat_id(str(chat.id))
     if not project:
         await context.bot.send_message(
