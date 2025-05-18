@@ -143,9 +143,11 @@ async def handle_nlp_project(update: Update, context: ContextTypes.DEFAULT_TYPE)
     name = data.get("nombre")
     description = data.get("descripcion")
 
-    if name or description is None:
+    print(name, description)
+
+    """if name or description is None:
         await update.message.reply_text("❗ Para crear un proyecto necesito que me des un nombre y su descripción.")
-        return
+        return"""
 
     project_data = {
         "name": name,

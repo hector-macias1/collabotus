@@ -1,4 +1,4 @@
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ConversationHandler, CallbackQueryHandler, filters
 
 from app.config import settings
 from app.bot.handlers.base_handlers import start_command, ayuda_command, handle_message
@@ -8,8 +8,11 @@ from app.bot.handlers.project_handler import (
     misproyectos_command,
     finalizarproyecto_command
 )
+from app.bot.handlers.task_handler import agregar_tarea_command
+from app.bot.handlers.premium_handler import premium_command
 from app.bot.handlers.register_handler import registro_command, handle_survey_response
 from app.bot.handlers.update_handler import actualizar_habilidades_command, handle_survey_response2
+from app.bot.handlers.task_handler import get_task_conversation_handler
 from app.bot.handlers.llm.nlp_handler import NLPHandler
 
 
@@ -38,6 +41,7 @@ class BotManager:
 
     async def _register_handlers(self):
         """Registers all the handlers"""
+
         # Basic handlers
         self.application.add_handler(CommandHandler("start", start_command))
         self.application.add_handler(CommandHandler("ayuda", ayuda_command))
@@ -47,11 +51,19 @@ class BotManager:
         self.application.add_handler(CommandHandler("misproyectos", misproyectos_command))
         self.application.add_handler(CommandHandler("finalizarproyecto", finalizarproyecto_command))
 
+        # Premium
+        self.application.add_handler(CommandHandler("premium", premium_command))
+
+        # Task handlers
+        #self.application.add_handler(CommandHandler("agregartarea", agregar_tarea_command))
+
         # Register handlers
         self.application.add_handler(CommandHandler("registro", registro_command))
         self.application.add_handler(CommandHandler("actualizar_habilidades", actualizar_habilidades_command))
         self.application.add_handler(CallbackQueryHandler(handle_survey_response))
         #self.application.add_handler(CallbackQueryHandler(handle_survey_response2))
+
+        self.application.add_handler(get_task_conversation_handler())
 
         # NLP handlers
         private_filter = filters.Regex(rf'^\?') & filters.ChatType.PRIVATE
@@ -61,7 +73,7 @@ class BotManager:
         self.application.add_handler(MessageHandler(mention_filter, self.nlp_handler.handle_message))
 
         # Private messages handlers
-        self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_private_message))
+        #self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_private_message))
 
     async def shutdown(self):
         """Shuts down the Telegram application"""

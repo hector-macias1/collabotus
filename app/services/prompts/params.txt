@@ -1,7 +1,7 @@
 Por favor, devuelve la información extraída del mensaje del usuario estrictamente en el siguiente formato (ej.):
 abre_llave*comillas dobles*a*comillas dobles*: 1, *comillas dobles*b*comillas dobles*: 2cierra_llave
 (respeta las comillas y el formato. Lo describo con palabras para evitar erroes en el parseo, pero tu si regresa con las comillas indicadas.
-Regresame puro texto).
+Regresame puro texto, nada formato json ni cosas con ```, etc. Texto crudo).
 Si el nombre del proyecto no se encuentra en el mensaje, el valor para 'nombre' debe ser null.
 Si la descripción del proyecto no se encuentra en el mensaje, el valor para 'descripcion' debe ser null.
 
