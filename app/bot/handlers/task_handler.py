@@ -8,7 +8,7 @@ from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
 from app.models.models import ProjectStatus
 
-# Estados
+# States
 TASK_ID, TASK_NAME, TASK_DESC, TASK_DEADLINE = range(4)
 
 
@@ -19,9 +19,9 @@ async def agregar_tarea_command(update: Update, context: ContextTypes.DEFAULT_TY
     # Verificar si es grupo
     if chat.type not in [ChatType.GROUP, ChatType.SUPERGROUP]:
         await update.message.reply_text("❗ Este comando solo puede usarse en grupos.")
-        return ConversationHandler.END  # Añadir return
+        return ConversationHandler.END
 
-    # Verificar proyecto activo
+    # Verify active project
     # project = await ProjectService.get_project_by_chat_id(str(chat.id))
     # if not project or project.status == ProjectStatus.TERMINATED:
     #    await update.message.reply_text("❌ No hay proyecto activo en este grupo")
@@ -61,15 +61,13 @@ async def handle_task_deadline(update: Update, context: ContextTypes.DEFAULT_TYP
         deadline = datetime.strptime(text, "%Y-%m-%d %H:%M")
     except ValueError:
         await update.message.reply_text("⚠ Formato inválido. Intenta de nuevo:")
-        return TASK_DEADLINE  # Mantener en el mismo estado
+        return TASK_DEADLINE  # Stay in the same state
 
     task_data = context.user_data["task_data"]
     task_data["deadline"] = deadline
 
-    # Simular guardado (implementa tu lógica real aquí)
+    # Save
     try:
-        # task = await TaskService.create_task(...)
-
         project = await ProjectService.get_project_by_chat_id(str(update.effective_chat.id))
         print(project)
         task, created = await Task.get_or_create(
