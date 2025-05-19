@@ -12,7 +12,7 @@ from app.bot.handlers.task_handler import agregar_tarea_command
 from app.bot.handlers.premium_handler import premium_command
 from app.bot.handlers.register_handler import registro_command, handle_survey_response
 from app.bot.handlers.update_handler import actualizar_habilidades_command, handle_survey_response2
-from app.bot.handlers.task_handler import get_task_conversation_handler
+from app.bot.handlers.task_handler import get_task_conversation_handler, listar_tareas_command
 from app.bot.handlers.llm.nlp_handler import NLPHandler
 
 
@@ -56,6 +56,7 @@ class BotManager:
 
         # Task handlers
         #self.application.add_handler(CommandHandler("agregartarea", agregar_tarea_command))
+        self.application.add_handler(CommandHandler("listartareas", listar_tareas_command))
 
         # Register handlers
         self.application.add_handler(CommandHandler("registro", registro_command))

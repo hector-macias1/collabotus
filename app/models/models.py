@@ -85,6 +85,7 @@ class ProjectUser(models.Model):
 
 class Task(models.Model):
     id = fields.IntField(pk=True)
+    custom_id = fields.CharField(max_length=50, null=True)
     name = fields.CharField(max_length=100)
     description = fields.TextField()
     status = fields.CharEnumField(TaskStatus, default=TaskStatus.ASSIGNED)

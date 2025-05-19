@@ -61,7 +61,7 @@ class ProjectService:
         """
         user = await User.get(id=user_id)
         projects = await user.projects
-        print(projects)
+        #print(projects)
         return [await Project_Pydantic.from_tortoise_orm(project) for project in projects]
 
     @staticmethod

@@ -25,6 +25,14 @@ class TaskService:
             return None
 
     @staticmethod
+    async def get_task_by_custom_id(task_custom_id: str) -> Optional[Task_Pydantic]:
+        try:
+            task = await Task.get(custom_id=task_custom_id)
+            return await Task_Pydantic.from_tortoise_orm(task)
+        except DoesNotExist:
+            return None
+
+    @staticmethod
     async def update_task(task_id: int, update_data: dict) -> Optional[Task_Pydantic]:
         try:
             task = await Task.get(id=task_id)
@@ -43,7 +51,8 @@ class TaskService:
     @staticmethod
     async def get_tasks_by_project(project_id: int) -> List[Task_Pydantic]:
         tasks = await Task.filter(project_id=project_id).all()
-        return await Task_Pydantic.from_queryset(tasks)
+        print("TASKS: ", tasks)
+        return [await Task_Pydantic.from_tortoise_orm(task) for task in tasks]
 
     @staticmethod
     async def get_tasks_by_user(user_id: int) -> List[Task_Pydantic]:

@@ -33,13 +33,17 @@ async def misproyectos_command(update: Update, context: ContextTypes.DEFAULT_TYP
     chat = update.effective_chat
     user_id = update.effective_user.id
 
+    if chat.type != ChatType.PRIVATE:
+        await update.message.reply_text("❗ Este comando sólo puede usarse desde un chat privado.")
+        return
+
     projects = await ProjectService.get_projects_by_user(update.effective_user.id)
 
+    print("PROYECTOS: ", projects)
+
     if not projects:
-        await context.bot.send_message(
-            chat_id=user_id,
-            text=f"No tienes ningun proyecto.\nPuedes crear uno usando el comando /crear_proyecto.",
-            parse_mode="Markdown"
+        await update.message.reply_text(
+            "❗ No tienes ningun proyecto.\nPuedes crear uno usando el comando /nuevoproyecto en un chat grupal."
         )
         return
 

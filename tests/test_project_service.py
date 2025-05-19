@@ -171,6 +171,7 @@ async def test_project_service():
     #10. Create a new Task
     print("\n10. Creating a new Task...")
     task1, created = await Task.get_or_create(
+        custom_id="T001",
         name="Task 1",
         description="This is a task",
         deadline=datetime.now() + timedelta(days=1),

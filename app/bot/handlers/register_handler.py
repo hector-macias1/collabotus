@@ -1,4 +1,5 @@
 import logging
+from telegram.constants import ChatType
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes, CallbackQueryHandler
 
@@ -27,8 +28,15 @@ skill_mapping = {
 user_survey_progress = {}
 
 async def registro_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
     chat_id = update.effective_chat.id
+
+    if chat.type != ChatType.PRIVATE:
+        await update.message.reply_text("❗ Este comando sólo puede usarse desde un chat privado.")
+        return
+
     user_survey_progress[chat_id] = {"current": 0, "answers": {}}
+
     await context.bot.send_message(
         chat_id=chat_id,
         text="Vamos a registrar tus habilidades."
