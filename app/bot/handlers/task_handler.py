@@ -23,10 +23,10 @@ async def agregar_tarea_command(update: Update, context: ContextTypes.DEFAULT_TY
         return ConversationHandler.END
 
     # Verify active project
-    # project = await ProjectService.get_project_by_chat_id(str(chat.id))
-    # if not project or project.status == ProjectStatus.TERMINATED:
-    #    await update.message.reply_text("❌ No hay proyecto activo en este grupo")
-    #    return ConversationHandler.END
+    project = await ProjectService.get_project_by_chat_id(str(chat.id))
+    if not project or project.status == ProjectStatus.TERMINATED:
+       await update.message.reply_text("❌ No hay proyecto activo en este grupo")
+       return ConversationHandler.END
 
     context.user_data.clear()
     context.user_data["task_data"] = {}

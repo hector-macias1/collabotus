@@ -1,45 +1,111 @@
 from telegram import Update, Chat
 from telegram.constants import ChatType
-from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters
-
+from telegram.ext import (
+    ContextTypes,
+    CommandHandler,
+    MessageHandler,
+    filters,
+    ConversationHandler
+)
 from app.models.models import ProjectStatus, ProjectCreate_Pydantic, ProjectUser
 from app.models.models import User
 from app.services.project_service import ProjectService
 
-# Save the user's progress in a dictionary:
-user_project_creation = {}
+# Definición de estados para la conversación
+ASK_NAME, ASK_DESC = range(2)
 
-async def crear_proyecto_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+async def crear_proyecto_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat = update.effective_chat
-    user_id = update.effective_user.id
+    user = update.effective_user
 
-    if chat.type != ChatType.GROUP and chat.type != ChatType.SUPERGROUP:
+    if chat.type not in (ChatType.GROUP, ChatType.SUPERGROUP):
         await update.message.reply_text("❗ Este comando solo puede usarse desde un chat grupal.")
-        return
+        return ConversationHandler.END
 
-    # Save the chat ID in a dictionary for later use
-    user_project_creation[user_id] = {
-        "group_id": chat.id,
-        "step": "ask_name"
-    }
+    # Store temp data
+    context.user_data['group_id'] = chat.id
 
     # Verify if user exists in DB
-    if not (user := await User.get_or_none(id=user_id)):
-        await update.message.send_message(
-            chat_id=user_id,
+    if not (_user := await User.get_or_none(id=user.id)):
+        await context.bot.send_message(
+            chat_id=user.id,
             text="❗No estás registrado en el sistema. Utiliza el comando /registro para registrarte.",
             parse_mode="Markdown"
         )
-        return
+        return ConversationHandler.END
 
-    # Send private message to the user
+    # Verify if user has premium account to create more than one project
+
+    # Send private message
     await context.bot.send_message(
-        chat_id=user_id,
+        chat_id=user.id,
         text="📝 ¡Hola! Vamos a crear un nuevo proyecto.\n\nPor favor, envíame el *nombre del proyecto*:",
         parse_mode="Markdown"
     )
+    return ASK_NAME
 
-"""async def misproyectos_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    context.user_data['project_name'] = update.message.text
+    await update.message.reply_text(
+        "📄 Genial. Ahora envíame la *descripción del proyecto*:",
+        parse_mode="Markdown"
+    )
+    return ASK_DESC
+
+
+async def get_description(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user = update.effective_user
+    context.user_data['description'] = update.message.text
+    print("entramos aqui")
+    # Create project
+    project_data = {
+        "name": context.user_data['project_name'],
+        "description": context.user_data['description'],
+        "telegram_chat_id": str(context.user_data['group_id'])
+    }
+
+    new_project = await ProjectService.create_project(
+        project_data=project_data,
+        admin_user_id=user.id,
+        member_ids=[]
+    )
+
+    # Notify group
+    await context.bot.send_message(
+        chat_id=context.user_data['group_id'],
+        text=f"🚀 Se ha creado un nuevo proyecto por @{user.username}:\n\n"
+             f"*{context.user_data['project_name']}*\n"
+             f"_{context.user_data['description']}_",
+        parse_mode="Markdown"
+    )
+
+    # Clean temp data
+    context.user_data.clear()
+    return ConversationHandler.END
+
+
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    context.user_data.clear()
+    await update.message.reply_text("❌ Creación de proyecto cancelada.")
+    return ConversationHandler.END
+
+
+# Conversation handler
+def get_project_conversation_handler():
+    return ConversationHandler(
+        entry_points=[CommandHandler('nuevoproyecto', crear_proyecto_command)],
+        states={
+            ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, get_name)],
+            ASK_DESC: [MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, get_description)]
+        },
+        fallbacks=[CommandHandler('cancelar', cancel)],
+        per_user=True,
+        per_chat=False  # Allow cross conversation between chats
+    )
+
+async def misproyectos_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     user_id = update.effective_user.id
 
@@ -48,8 +114,6 @@ async def crear_proyecto_command(update: Update, context: ContextTypes.DEFAULT_T
         return
 
     projects = await ProjectService.get_projects_by_user(update.effective_user.id)
-
-    print("PROYECTOS: ", projects)
 
     if not projects:
         await update.message.reply_text(
@@ -79,10 +143,8 @@ async def finalizarproyecto_command(update: Update, context: ContextTypes.DEFAUL
 
     project = await ProjectService.get_project_by_chat_id(str(chat.id))
     if not project:
-        await context.bot.send_message(
-            chat_id=user_id,
-            text=f"No tienes ningun proyecto en este chat.\nPuedes crear uno usando el comando /crear_proyecto.",
-            parse_mode="Markdown"
+        await update.message.reply_text(
+            f"No tienes ningún proyecto en este chat.\nPuedes crear uno usando el comando /crear_proyecto."
         )
         return
 
@@ -91,57 +153,6 @@ async def finalizarproyecto_command(update: Update, context: ContextTypes.DEFAUL
         await update.message.reply_text(f"Proyecto {project.name} eliminado exitosamente.")
     except Exception as e:
         await update.message.reply_text(f"Error al eliminar el proyecto: {e}")
-"""
-
-
-async def handle_private_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    message = update.message.text
-
-    if user_id not in user_project_creation:
-        await update.message.reply_text("❗ Introduce un comando válido")
-        return
-
-    user_data = user_project_creation[user_id]
-
-    # 1. Ask for the project name
-    if user_data["step"] == "ask_name":
-        user_data["project_name"] = message
-        user_data["step"] = "ask_description"
-        await update.message.reply_text("📄 Genial. Ahora envíame la *descripción del proyecto*:", parse_mode="Markdown")
-
-    elif user_data["step"] == "ask_description":
-        user_data["description"] = message
-
-        # Show summary
-        name = user_data["project_name"]
-        desc = user_data["description"]
-        resumen = f"✅ Proyecto creado:\n\n*Nombre:* {name}\n*Descripción:* {desc}"
-        await update.message.reply_text(resumen, parse_mode="Markdown")
-
-        # Optional: Send to group
-        group_id = user_data["group_id"]
-        await context.bot.send_message(
-            chat_id=group_id,
-            text=f"🚀 Se ha creado un nuevo proyecto por @{update.effective_user.username}:\n\n*{name}*\n_{desc}_",
-            parse_mode="Markdown"
-        )
-
-        # Create a dictionary with the data
-        project_data = {
-            "name": name,
-            "description": desc,
-            "telegram_chat_id": str(group_id)
-        }
-
-        new_project = await ProjectService.create_project(
-            project_data=project_data,
-            admin_user_id=update.effective_user.id,
-            member_ids=[]
-        )
-
-        # Clean state
-        del user_project_creation[user_id]
 
 async def handle_nlp_project(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -150,6 +161,13 @@ async def handle_nlp_project(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     if update.effective_chat.type != ChatType.GROUP and update.effective_chat.type != ChatType.SUPERGROUP:
         await update.message.reply_text("❗ Este comando solo puede usarse desde un chat grupal.")
+        return
+
+    # Verify if user exists in DB
+    if not (user := await User.get_or_none(id=user_id)):
+        await update.message.reply_text(
+            "❗No estás registrado en el sistema. Utiliza el comando /registro por chat privado para registrarte."
+        )
         return
 
     data = context.user_data.get("project_data", {})

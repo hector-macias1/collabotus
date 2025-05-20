@@ -49,6 +49,11 @@ class TaskService:
         return deleted_count > 0
 
     @staticmethod
+    async def delete_tasks_by_project(project_id: int) -> int:
+        deleted_count = await Task.filter(project_id=project_id).delete()
+        return deleted_count
+
+    @staticmethod
     async def get_tasks_by_project(project_id: int) -> List[Task_Pydantic]:
         tasks = await Task.filter(project_id=project_id).all()
         print("TASKS: ", tasks)

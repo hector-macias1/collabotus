@@ -3,13 +3,22 @@ from telegram.ext import ContextTypes
 from telegram.constants import ChatType
 from app.bot.handlers.register_handler import send_next_question, user_survey_progress
 from app.services.survey_service import save_user_skill_by_question_key
+from app.models.models import User
 
 async def actualizar_habilidades_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     chat_id = update.effective_chat.id
+    user_id = update.effective_user.id
 
     if chat.type != ChatType.PRIVATE:
         await update.message.reply_text("❗ Este comando sólo puede usarse desde un chat privado.")
+        return
+
+    # Verify if user exists in DB
+    if not (user := await User.get_or_none(id=user_id)):
+        await update.message.reply_text(
+            "❗No estás registrado en el sistema. Utiliza el comando /registro para registrarte."
+        )
         return
 
     user_survey_progress[chat_id] = {
@@ -37,6 +46,7 @@ async def handle_survey_response2(update: Update, context: ContextTypes.DEFAULT_
         try:
             user_id = query.from_user.id
             #mode = user_data.get("mode", "register")
+            print("SE UTILIZO EL SURVEY2")
             await save_user_skill_by_question_key(user_id, key, value, update_existing=True)
         except Exception as e:
             await context.bot.send_message(chat_id=chat_id, text=f"❌ Error guardando la respuesta: {e}")

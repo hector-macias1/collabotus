@@ -3,7 +3,7 @@ from tortoise.exceptions import DoesNotExist
 from tortoise.transactions import atomic
 
 from app.models.models import (
-    Project, User, ProjectUser, ProjectRole, ProjectStatus,
+    Project, User, ProjectUser, Task, ProjectRole, ProjectStatus,
     Project_Pydantic, ProjectCreate_Pydantic,
     ProjectUser_Pydantic, ProjectUserCreate_Pydantic
 )
@@ -400,13 +400,16 @@ class ProjectService:
         Returns:
             True if the project was deleted successfully, False otherwise.
         """
-        try:
+        """try:
             # Verify that the requester is the admin
             admin_role = await ProjectUser.get(
                 project_id=project_id,
                 user_id=admin_id,
                 role=ProjectRole.ADMIN
             )
+
+            if not admin_role:
+                return False
 
             # Get the project
             project = await Project.get(id=project_id)
@@ -419,6 +422,31 @@ class ProjectService:
 
             # Delete the project
             await project.delete()
+
+            return True
+
+        except DoesNotExist:
+            return False"""
+        try:
+            # Verify admin permissions
+            admin_exists = await ProjectUser.exists(
+                project_id=project_id,
+                user_id=admin_id,
+                role=ProjectRole.ADMIN
+            )
+
+            if not admin_exists:
+                return False
+
+            # Delete in secure order to avoid FK problems
+            # 1. Delete all project tasks
+            await Task.filter(project_id=project_id).delete()
+
+            # 2. Delete all Project User relations
+            await ProjectUser.filter(project_id=project_id).delete()
+
+            # 3. Delete project
+            await Project.filter(id=project_id).delete()
 
             return True
 

@@ -2,6 +2,8 @@ import logging
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 
+from app.models.models import User
+
 logger = logging.getLogger(__name__)
 
 start_message = """
@@ -49,6 +51,7 @@ help_message = """
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Manage /start command"""
+    user_id = update.effective_user.id
     chat_id = update.effective_chat.id
 
     await context.bot.send_message(
@@ -56,6 +59,12 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = start_message,
         parse_mode='Markdown'
     )
+
+    if not (user := await User.get_or_none(id=user_id)):
+        await update.message.reply_text(
+            "❗No estás registrado en el sistema. Utiliza el comando /registro para registrarte."
+        )
+        return
 
     await update.message.reply_text(f"El chat ID de este grup es: {chat_id}")
     
@@ -71,9 +80,16 @@ async def ayuda_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Manage all messages"""
+    user_id = update.effective_user.id
     chat_id = update.effective_chat.id
+
+    if not (user := await User.get_or_none(id=user_id)):
+        await update.message.reply_text(
+            "❗No estás registrado en el sistema. Utiliza el comando /registro para registrarte."
+        )
+        return
 
     await context.bot.send_message(
         chat_id = chat_id,
-        text = 'Introduce un comando válido'
+        text = '❗Introduce un comando válido'
     )

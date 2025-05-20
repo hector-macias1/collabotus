@@ -20,6 +20,10 @@ class NLPHandler:
 
         clean_message = None
 
+        must_delete = await update.message.reply_text(
+            "Espera un momento. Estoy procesando tu solicitud..."
+        )
+
         # In group or supergroup: find mention and command
         if chat_type in ["group", "supergroup"]:
             clean_message = await extract_command(update, command)
@@ -42,4 +46,5 @@ class NLPHandler:
         # Classify and solve intent
         intent = await self.classifier.classify(clean_message)
         print("INTENT: ", intent)
+        await context.bot.deleteMessage(message_id=must_delete.message_id, chat_id=update.message.chat_id)
         await self.resolver.resolve(intent, update, context)

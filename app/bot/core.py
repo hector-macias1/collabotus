@@ -5,9 +5,10 @@ from app.bot.handlers.base_handlers import start_command, ayuda_command, handle_
 from app.bot.handlers.project_handler import (
     crear_proyecto_command,
     handle_private_message,
-    misproyectos_command,
-    finalizarproyecto_command
+    #misproyectos_command,
+    #finalizarproyecto_command
 )
+from app.bot.handlers.project_handler2 import get_project_conversation_handler, misproyectos_command, finalizarproyecto_command
 from app.bot.handlers.task_handler import agregar_tarea_command
 from app.bot.handlers.premium_handler import premium_command
 from app.bot.handlers.register_handler import registro_command, handle_survey_response
@@ -47,7 +48,7 @@ class BotManager:
         self.application.add_handler(CommandHandler("ayuda", ayuda_command))
 
         # Project handlers
-        self.application.add_handler(CommandHandler("nuevoproyecto", crear_proyecto_command))
+        #self.application.add_handler(CommandHandler("nuevoproyecto", crear_proyecto_command))
         self.application.add_handler(CommandHandler("misproyectos", misproyectos_command))
         self.application.add_handler(CommandHandler("finalizarproyecto", finalizarproyecto_command))
 
@@ -64,6 +65,8 @@ class BotManager:
         self.application.add_handler(CallbackQueryHandler(handle_survey_response))
         #self.application.add_handler(CallbackQueryHandler(handle_survey_response2))
 
+        # Conversation handlers
+        self.application.add_handler(get_project_conversation_handler())
         self.application.add_handler(get_task_conversation_handler())
 
         # NLP handlers
@@ -75,6 +78,7 @@ class BotManager:
 
         # Private messages handlers
         #self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_private_message))
+        self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     async def shutdown(self):
         """Shuts down the Telegram application"""

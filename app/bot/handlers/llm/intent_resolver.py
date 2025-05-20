@@ -1,6 +1,7 @@
 from app.bot.handlers.base_handlers import ayuda_command
 from app.bot.handlers.update_handler import actualizar_habilidades_command
-from app.bot.handlers.project_handler import crear_proyecto_command, handle_nlp_project
+#from app.bot.handlers.project_handler import crear_proyecto_command, handle_nlp_project
+from app.bot.handlers.project_handler2 import  crear_proyecto_command, handle_nlp_project
 from telegram import Update
 from telegram.ext import ContextTypes, MessageHandler, filters
 from app.utils.extract_data import extract_project_data
