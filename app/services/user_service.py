@@ -1,8 +1,8 @@
-from tortoise.exceptions import IntegrityError
+from tortoise.exceptions import IntegrityError, DoesNotExist
 from tortoise.transactions import in_transaction
 
 from app.models.models import User, Skill, UserSkill, SubscriptionType, UserCreate_Pydantic
-from app.models.models import UserCreate_Pydantic  # Pydantic schema for validation
+from app.models.models import User_Pydantic, UserCreate_Pydantic  # Pydantic schema for validation
 from typing import Optional, List
 
 
@@ -22,6 +22,15 @@ class UserService:
             user.first_name = first_name
             await user.save()
         return user
+
+    @staticmethod
+    async def get_user_by_id(user_id: int) -> Optional[User_Pydantic]:
+        try:
+            user = await User.get(id=user_id)
+            print(user.id)
+            return await User_Pydantic.from_tortoise_orm(user)
+        except DoesNotExist:
+            return None
 
     @staticmethod
     async def update_user_skills(telegram_id: int, skills_data: List[dict]) -> User:

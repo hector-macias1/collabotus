@@ -3,11 +3,14 @@ from telegram import Update, Chat
 from telegram.constants import ChatType
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, ConversationHandler, filters
 
-from app.models.models import TaskStatus, TaskCreate_Pydantic, Task, Project
+from app.config import Settings
+from app.models.models import TaskStatus, TaskCreate_Pydantic, Task, Project, User
+from app.services.gemini_service import GeminiService
 from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
 from app.services.project_service import ProjectService
 from app.models.models import ProjectStatus
+from app.services.user_service import UserService
 
 # States
 TASK_ID, TASK_NAME, TASK_DESC, TASK_DEADLINE = range(4)
@@ -78,11 +81,21 @@ async def handle_task_deadline(update: Update, context: ContextTypes.DEFAULT_TYP
             deadline=deadline,
             project_id=project.id,
         )
+
+        llm = GeminiService(Settings.GEMINI_KEY, Settings.LLM_MODEL)
+
+        user_to_assign = await UserService.get_user_by_id(
+            await llm.assign_task(project.id, task.name, task.description)
+        )
+
+        await TaskService.assign_user(task.id, user_to_assign.id)
+
         await update.message.reply_text(
             f"✅ Tarea creada:\n"
             f"ID: {task_data['identifier']}\n"
             f"Nombre: {task_data['name']}\n"
-            f"Deadline: {deadline.strftime('%Y-%m-%d %H:%M')}"
+            f"Deadline: {deadline.strftime('%Y-%m-%d %H:%M')}\n\n"
+            f"Asginada a: @{user_to_assign.first_name}"
         )
     except Exception as e:
         await update.message.reply_text(f"❌ Error: {str(e)}")

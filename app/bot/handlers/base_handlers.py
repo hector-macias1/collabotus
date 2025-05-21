@@ -2,7 +2,8 @@ import logging
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 
-from app.models.models import User
+from app.models.models import User, UserSkill
+from app.services.skill_service import SkillService
 
 logger = logging.getLogger(__name__)
 
@@ -60,13 +61,13 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode='Markdown'
     )
 
+    await update.message.reply_text(f"El chat ID de este grup es: {chat_id}")
+
     if not (user := await User.get_or_none(id=user_id)):
         await update.message.reply_text(
             "❗No estás registrado en el sistema. Utiliza el comando /registro para registrarte."
         )
         return
-
-    await update.message.reply_text(f"El chat ID de este grup es: {chat_id}")
     
 async def ayuda_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Manage /ayuda command"""

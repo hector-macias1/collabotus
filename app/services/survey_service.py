@@ -23,6 +23,7 @@ async def save_user_skill(user_id: int, skill_type: SkillType, skill_value: str)
 QUESTION_KEY_TO_TYPE = {
     "language": SkillType.LANGUAGE,
     "framework": SkillType.FRAMEWORK,
+    "database": SkillType.DATABASE,
 }
 
 async def save_user_skill_by_question_key(user_id: int, question_key: str, skill_name: str, update_existing: bool = True):
@@ -38,6 +39,7 @@ async def save_user_skill_by_question_key(user_id: int, question_key: str, skill
 
     try:
         skill = await Skill.get(type=skill_type, name=skill_type)
+        #print(skill)
     except DoesNotExist:
         raise ValueError(f"Skill '{skill_name}' con tipo '{skill_type.value}' no encontrado")
 

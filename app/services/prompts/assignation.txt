@@ -1,0 +1,12 @@
+TAREA:
+Título: "{task_title}"
+Descripción: "{task_description}"
+
+USUARIOS DISPONIBLES:
+"{users}"
+
+INSTRUCCIONES:
+1. Elije el usuario que mejor se ajuste a la tarea según sus habilidades. Algunos valores son directos (ej. el valor de
+'language' determina en qué lenguaje es más competente), pero hay otros que son numéricos (ej. el valor de 'database'
+va de uno a cinco y determina si el usuario es competente en bases de datos, donde 1: Básico - 5: Experto).
+2. Devuélveme únicamente el ID de usuario.

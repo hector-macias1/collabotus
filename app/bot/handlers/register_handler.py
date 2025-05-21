@@ -16,12 +16,18 @@ survey = [
         "question": "¿Qué framework dominas más?",
         "key": "framework",
         "options": ["Django", "SpringBoot", "React, Angular, Node.js, Express, Vue, etc.", "Laravel"]
+    },
+    {
+        "question": "¿Cómo calificas tu dominio en bases de datos (sql/nosql)?\n1: Básico - 5: Experto",
+        "key": "database",
+        "options": ["1", "2", "3", "4", "5"]
     }
 ]
 
 skill_mapping = {
     "language": SkillType.LANGUAGE,
     "framework": SkillType.FRAMEWORK,
+    "database": SkillType.DATABASE,
 }
 
 # Dictionary for saving responses
@@ -30,12 +36,30 @@ user_survey_progress = {}
 async def registro_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     chat_id = update.effective_chat.id
+    user_id = update.effective_user.id
 
     if chat.type != ChatType.PRIVATE:
         await update.message.reply_text("❗ Este comando sólo puede usarse desde un chat privado.")
         return
 
+    # Verify if user exists in DB
+    if user := await User.get_or_none(id=user_id):
+        await update.message.reply_text(
+            "❗Ya estás registrado en el sistema.\nUtiliza el comando /actualizar_habilidades para actualizar tu información."
+        )
+        return
+
     user_survey_progress[chat_id] = {"current": 0, "answers": {}}
+
+    print("USER ID: ", update.effective_user.id)
+    print("USERNAME: ", update.effective_user.username)
+    print("FIRST NAME: ", update.effective_user.first_name)
+
+    _user, created = await User.get_or_create(
+        id=update.effective_user.id,
+        username=update.effective_user.username,
+        first_name=update.effective_user.first_name
+    )
 
     await context.bot.send_message(
         chat_id=chat_id,
@@ -88,7 +112,6 @@ async def handle_survey_response(update: Update, context: ContextTypes.DEFAULT_T
         # Save in db
         try:
             skill_type = skill_mapping.get(key)
-            #print("Skill type: ", skill_type)
             if skill_type:
                 user_id = query.from_user.id
                 await save_user_skill_by_question_key(user_id, key, value, update_existing=True)

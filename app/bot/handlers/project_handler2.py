@@ -1,4 +1,4 @@
-from telegram import Update, Chat
+from telegram import Update, Chat, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatType
 from telegram.ext import (
     ContextTypes,
@@ -133,11 +133,12 @@ async def misproyectos_command(update: Update, context: ContextTypes.DEFAULT_TYP
             text=f"{project.name}\n",
         )
 
+
 async def finalizarproyecto_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     user_id = update.effective_user.id
 
-    if chat.type != ChatType.GROUP and chat.type != ChatType.SUPERGROUP:
+    if chat.type not in (ChatType.GROUP, ChatType.SUPERGROUP):
         await update.message.reply_text("❗ Sólo puedes eliminar un proyecto desde un chat grupal.")
         return
 
@@ -148,11 +149,48 @@ async def finalizarproyecto_command(update: Update, context: ContextTypes.DEFAUL
         )
         return
 
-    try:
-        await ProjectService.delete_project(project.id, user_id)
-        await update.message.reply_text(f"Proyecto {project.name} eliminado exitosamente.")
-    except Exception as e:
-        await update.message.reply_text(f"Error al eliminar el proyecto: {e}")
+    # Crear teclado inline de confirmación
+    keyboard = [
+        [
+            InlineKeyboardButton("✅ Sí", callback_data=f"confirm_delete:yes:{project.id}:{user_id}"),
+            InlineKeyboardButton("❌ No", callback_data=f"confirm_delete:no:{project.id}:{user_id}")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(
+        f"⚠️ ¿Estás seguro de que quieres eliminar el proyecto *{project.name}*?",
+        reply_markup=reply_markup,
+        parse_mode="Markdown"
+    )
+
+
+async def confirm_delete_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    # Parsear datos del callback
+    data = query.data.split(':')
+    if len(data) != 4 or data[0] != 'confirm_delete':
+        return
+
+    _, decision, project_id, original_user_id = data
+    current_user_id = update.effective_user.id
+
+    # Verificar que el usuario que confirma es quien inició el comando
+    if str(current_user_id) != original_user_id:
+        await query.edit_message_text(text="❌ Solo el usuario que inició la eliminación puede confirmar.")
+        return
+
+    # Process decision
+    if decision == 'yes':
+        try:
+            await ProjectService.delete_project(project_id, int(original_user_id))
+            await query.edit_message_text(text=f"🗑️ Proyecto eliminado exitosamente.")
+        except Exception as e:
+            await query.edit_message_text(text=f"❌ Error al eliminar el proyecto: {e}")
+    else:
+        await query.edit_message_text(text="✅ Eliminación cancelada.")
 
 async def handle_nlp_project(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id

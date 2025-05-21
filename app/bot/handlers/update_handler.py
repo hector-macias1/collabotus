@@ -10,6 +10,8 @@ async def actualizar_habilidades_command(update: Update, context: ContextTypes.D
     chat_id = update.effective_chat.id
     user_id = update.effective_user.id
 
+    gemini
+
     if chat.type != ChatType.PRIVATE:
         await update.message.reply_text("❗ Este comando sólo puede usarse desde un chat privado.")
         return

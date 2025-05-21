@@ -8,7 +8,7 @@ from app.bot.handlers.project_handler import (
     #misproyectos_command,
     #finalizarproyecto_command
 )
-from app.bot.handlers.project_handler2 import get_project_conversation_handler, misproyectos_command, finalizarproyecto_command
+from app.bot.handlers.project_handler2 import get_project_conversation_handler, misproyectos_command, finalizarproyecto_command, confirm_delete_handler
 from app.bot.handlers.task_handler import agregar_tarea_command
 from app.bot.handlers.premium_handler import premium_command
 from app.bot.handlers.register_handler import registro_command, handle_survey_response
@@ -51,6 +51,7 @@ class BotManager:
         #self.application.add_handler(CommandHandler("nuevoproyecto", crear_proyecto_command))
         self.application.add_handler(CommandHandler("misproyectos", misproyectos_command))
         self.application.add_handler(CommandHandler("finalizarproyecto", finalizarproyecto_command))
+        self.application.add_handler(CallbackQueryHandler(confirm_delete_handler, pattern="confirm_delete*"))
 
         # Premium
         self.application.add_handler(CommandHandler("premium", premium_command))
@@ -78,7 +79,7 @@ class BotManager:
 
         # Private messages handlers
         #self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_private_message))
-        self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+        self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, handle_message))
 
     async def shutdown(self):
         """Shuts down the Telegram application"""

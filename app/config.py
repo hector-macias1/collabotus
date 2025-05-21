@@ -14,7 +14,7 @@ class Settings:
     WEBHOOK_URL: str = os.getenv("WEBHOOK_URL")
     WEBHOOK_SECRET: str = os.getenv("WEBHOOK_SECRET", "")
 
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/project_bot")
+    DATABASE_URL: str = os.getenv("DATABASE_URL")
 
     # LLM config
     GEMINI_KEY: str = os.getenv("GEMINI_API_KEY")
