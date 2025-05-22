@@ -1,17 +1,21 @@
+# Añadir estos estados al principio del archivo
 from datetime import datetime
-from telegram import Update, Chat, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.constants import ChatType
-from telegram.ext import ContextTypes, CommandHandler, MessageHandler, ConversationHandler, filters, \
-    CallbackQueryHandler
 
+from telegram import Update
+from telegram.constants import ChatType
+from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters
+
+from app.models.models import ProjectStatus, TaskStatus
 from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
-from app.models.models import ProjectStatus
-from app.models.models import TaskStatus, TaskCreate_Pydantic, Task, Project, User
 
-# Actualizar los estados
-ACTUALIZAR_TAREA_STATES = range(3)
-(SELECT_TASK, CHOOSE_OPERATION, UPDATE_DEADLINE) = ACTUALIZAR_TAREA_STATES
+ACTUALIZAR_TAREA_STATES = range(4)
+(
+    SELECT_TASK,
+    CHOOSE_OPERATION,
+    UPDATE_STATUS,
+    UPDATE_DEADLINE,
+) = ACTUALIZAR_TAREA_STATES
 
 
 async def actualizartarea_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -29,32 +33,37 @@ async def actualizartarea_command(update: Update, context: ContextTypes.DEFAULT_
         await update.message.reply_text("❌ No hay proyecto activo en este grupo")
         return ConversationHandler.END
 
-    # Obtener tareas y crear botones
+    # Obtener tareas del usuario en este proyecto
     tasks = await TaskService.get_tasks_by_user_and_project(user.id, project.id)
+    if not tasks:
+        await update.message.reply_text("❗ No tienes tareas asignadas en este proyecto")
+        return ConversationHandler.END
 
-    keyboard = [
-        [InlineKeyboardButton(f"{task.custom_id}: {task.name}", callback_data=f"task_{task.id}")]
-        for task in tasks
-    ]
-    keyboard.append([InlineKeyboardButton("❌ Cancelar", callback_data="cancel")])
+    context.user_data.clear()
+    context.user_data["project_id"] = project.id
+    context.user_data["user_id"] = user.id
 
+    # Listar tareas
+    tasks_list = "\n".join([
+                               f"• {task.custom_id}: {task.name} (Estado: {TaskStatus(task.status).name}, Fecha límite: {task.deadline.strftime('%Y-%m-%d %H:%M')})"
+                               for task in tasks])
     await update.message.reply_text(
-        "📝 Selecciona una tarea:",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        f"📝 Tus tareas asignadas:\n{tasks_list}\n"
+        "Por favor, escribe el ID de la tarea que deseas actualizar:"
     )
     return SELECT_TASK
 
 
 async def handle_task_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
+    task_custom_id = update.message.text.strip()
+    project_id = context.user_data["project_id"]
+    user_id = context.user_data["user_id"]
 
-    if query.data == "cancel":
-        await cancel_update(update, context)
-        return ConversationHandler.END
-
-    task_id = int(query.data.split("_")[1])
-    task = await TaskService.get_task_by_id(task_id)
+    # Validar tarea
+    task = await TaskService.get_task_by_custom_id_and_project(task_custom_id, project_id, user_id)
+    if not task:
+        await update.message.reply_text("❌ ID de tarea inválido. Intenta de nuevo:")
+        return SELECT_TASK
 
     context.user_data["task"] = {
         "id": task.id,
@@ -64,67 +73,63 @@ async def handle_task_selection(update: Update, context: ContextTypes.DEFAULT_TY
         "current_deadline": task.deadline
     }
 
-    keyboard = [
-        [InlineKeyboardButton("🔄 Cambiar estado", callback_data="change_status")],
-        [InlineKeyboardButton("📅 Extender fecha", callback_data="extend_deadline")],
-        [InlineKeyboardButton("❌ Cancelar", callback_data="cancel")]
-    ]
-
-    await query.edit_message_text(
-        f"Tarea seleccionada: {task.custom_id}\n¿Qué deseas hacer?",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        "¿Qué operación deseas realizar?\n"
+        "1. Cambiar estado de la tarea\n"
+        "2. Extender fecha límite\n"
+        "3. Cancelar proceso"
     )
     return CHOOSE_OPERATION
 
 
 async def handle_operation_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
+    choice = update.message.text.strip()
 
-    if query.data == "cancel":
-        await cancel_update(update, context)
-        return ConversationHandler.END
-
-    if query.data == "change_status":
-        keyboard = [
-            [InlineKeyboardButton("En progreso", callback_data="status_IN_PROGRESS")],
-            [InlineKeyboardButton("Terminada", callback_data="status_DONE")],
-            [InlineKeyboardButton("❌ Cancelar", callback_data="cancel")]
-        ]
-
-        await query.edit_message_text(
-            "Selecciona el nuevo estado:",
-            reply_markup=InlineKeyboardMarkup(keyboard)
+    if choice == "1":
+        await update.message.reply_text(
+            "Selecciona el nuevo estado:\n"
+            "1. En progreso (IN_PROGRESS)\n"
+            "2. Terminada (DONE)\n"
+            "3. Cancelar"
         )
-        return ConversationHandler.END  # Terminamos aquí porque es una operación directa
-
-    if query.data == "extend_deadline":
-        await query.edit_message_text(
+        return UPDATE_STATUS
+    elif choice == "2":
+        await update.message.reply_text(
             "Introduce la nueva fecha límite (YYYY-MM-DD HH:MM):\n"
-            "Ejemplo: 2024-12-31 23:59\n"
-            "O escribe /cancelar para abortar"
+            "Ejemplo: 2024-12-31 23:59"
         )
         return UPDATE_DEADLINE
-    return None
+    elif choice == "3":
+        await cancel_update(update, context)
+        return ConversationHandler.END
+    else:
+        await update.message.reply_text("❌ Opción inválida. Elige 1, 2 o 3:")
+        return CHOOSE_OPERATION
 
 
 async def handle_status_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    if query.data == "cancel":
-        await cancel_update(update, context)
-        return ConversationHandler.END
-
-    new_status = TaskStatus[query.data.split("_")[1]]
+    choice = update.message.text.strip()
     task_data = context.user_data["task"]
 
+    if choice == "1":
+        new_status = TaskStatus.IN_PROGRESS
+    elif choice == "2":
+        new_status = TaskStatus.DONE
+    elif choice == "3":
+        await cancel_update(update, context)
+        return ConversationHandler.END
+    else:
+        await update.message.reply_text("❌ Opción inválida. Elige 1, 2 o 3:")
+        return UPDATE_STATUS
+
+    # Actualizar estado
     await TaskService.update_task(
         task_id=task_data["id"],
         status=new_status
     )
 
-    await query.edit_message_text(
+    # Mensaje de confirmación
+    await update.message.reply_text(
         f"✅ Estado actualizado:\n"
         f"Tarea: {task_data['name']}\n"
         f"Estado anterior: {TaskStatus(task_data['current_status']).name}\n"
@@ -167,26 +172,18 @@ async def handle_deadline_update(update: Update, context: ContextTypes.DEFAULT_T
 
 async def cancel_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
-
-    # Determinar si es un mensaje normal o un callback de botón inline
-    if update.callback_query:
-        await update.callback_query.answer()
-        await update.callback_query.edit_message_text("🚫 Actualización cancelada")
-    else:
-        await update.message.reply_text("🚫 Actualización cancelada")
-
+    await update.message.reply_text("🚫 Actualización cancelada")
     return ConversationHandler.END
+
 
 def get_update_task_conversation_handler():
     return ConversationHandler(
         entry_points=[CommandHandler('actualizartarea', actualizartarea_command)],
         states={
-            SELECT_TASK: [CallbackQueryHandler(handle_task_selection)],
-            CHOOSE_OPERATION: [CallbackQueryHandler(handle_operation_selection)],
-            UPDATE_DEADLINE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_deadline_update),
-                CommandHandler('cancelar', cancel_update)
-            ]
+            SELECT_TASK: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_task_selection)],
+            CHOOSE_OPERATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_operation_selection)],
+            UPDATE_STATUS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_status_update)],
+            UPDATE_DEADLINE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_deadline_update)],
         },
         fallbacks=[CommandHandler('cancelar', cancel_update)],
         allow_reentry=True
