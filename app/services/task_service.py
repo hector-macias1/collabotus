@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional, Union, Dict, Any, Tuple
 from tortoise.exceptions import DoesNotExist
 from tortoise.transactions import atomic
@@ -84,3 +85,45 @@ class TaskService:
             return await Task_Pydantic.from_tortoise_orm(task)
         except DoesNotExist:
             return None
+
+
+
+
+    """New methods"""
+
+    @staticmethod
+    async def get_task_by_id(task_id: int) -> Optional[Task]:
+        return await Task.get(id=task_id).prefetch_related('project')
+
+    @staticmethod
+    async def get_tasks_by_user_and_project(user_id: int, project_id: int) -> List[Task]:
+        return await Task.filter(
+            assigned_user_id=user_id,
+            project_id=project_id
+        ).all()
+
+    @staticmethod
+    async def get_task_by_custom_id_and_project(custom_id: str, project_id: int, user_id: int) -> Optional[Task]:
+        return await Task.filter(
+            custom_id=custom_id,
+            project_id=project_id,
+            assigned_user_id=user_id
+        ).first()
+
+    @staticmethod
+    @atomic()
+    async def update_task(
+            task_id: int,
+            status: Optional[TaskStatus] = None,
+            deadline: Optional[datetime] = None
+    ) -> bool:
+        try:
+            task = await Task.get(id=task_id)
+            if status:
+                task.status = status
+            if deadline:
+                task.deadline = deadline
+            await task.save()
+            return True
+        except DoesNotExist:
+            return False

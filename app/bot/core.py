@@ -1,5 +1,6 @@
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ConversationHandler, CallbackQueryHandler, filters
 
+from app.bot.handlers.update_task_handler import get_update_task_conversation_handler
 from app.config import settings
 from app.bot.handlers.base_handlers import start_command, ayuda_command, handle_message
 from app.bot.handlers.project_handler import (
@@ -59,6 +60,7 @@ class BotManager:
         # Task handlers
         #self.application.add_handler(CommandHandler("agregartarea", agregar_tarea_command))
         self.application.add_handler(CommandHandler("listartareas", listar_tareas_command))
+        self.application.add_handler(get_update_task_conversation_handler())
 
         # Register handlers
         self.application.add_handler(CommandHandler("registro", registro_command))
@@ -69,6 +71,7 @@ class BotManager:
         # Conversation handlers
         self.application.add_handler(get_project_conversation_handler())
         self.application.add_handler(get_task_conversation_handler())
+
 
         # NLP handlers
         private_filter = filters.Regex(rf'^\?') & filters.ChatType.PRIVATE
