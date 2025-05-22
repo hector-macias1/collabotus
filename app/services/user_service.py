@@ -1,12 +1,55 @@
 from tortoise.exceptions import IntegrityError, DoesNotExist
+from tortoise.expressions import Q
 from tortoise.transactions import in_transaction
 
-from app.models.models import User, Skill, UserSkill, SubscriptionType, UserCreate_Pydantic
+from app.models.models import User, Skill, UserSkill, SubscriptionType, UserCreate_Pydantic, ProjectStatus, ProjectUser, \
+    ProjectRole
 from app.models.models import User_Pydantic, UserCreate_Pydantic  # Pydantic schema for validation
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 
 class UserService:
+
+    @staticmethod
+    async def is_user_admin(project_id: int, user_id: int) -> bool:
+        project_user = await ProjectUser.filter(project_id=project_id, user_id=user_id).first()
+        if project_user and project_user.role == ProjectRole.ADMIN:
+            return True
+        return False
+
+    @staticmethod
+    async def can_create_project(user_id: int) -> bool:
+        user = await User.get_or_none(id=user_id).prefetch_related("projects")
+        if not user:
+            return False
+
+        if user.subscription_type == SubscriptionType.PREMIUM:
+            return True
+
+        active_projects = await user.projects.filter(status=ProjectStatus.ACTIVE).count()
+        return active_projects < 1
+
+    @staticmethod
+    async def find_users_by_identifiers(identifiers: List[str]) -> Tuple[List[int], List[str]]:
+        """
+        Encuentra usuarios por username o first_name
+        Returns: (lista de IDs válidos, lista de identificadores no encontrados)
+        """
+        valid_ids = []
+        missing = []
+
+        for identifier in identifiers:
+            user = await User.filter(
+                Q(username=identifier) | Q(first_name=identifier)
+            ).first()
+
+            if user:
+                valid_ids.append(user.id)
+            else:
+                missing.append(identifier)
+
+        return valid_ids, missing
+
     @staticmethod
     async def create_or_update_user(telegram_id: int, username: str, first_name: str) -> User:
         user, created = await User.get_or_create(
@@ -22,6 +65,16 @@ class UserService:
             user.first_name = first_name
             await user.save()
         return user
+
+    @staticmethod
+    async def update_subscription(user_id: int, new_subscription: SubscriptionType) -> Optional[User]:
+        try:
+            user = await User.get(id=user_id)
+            user.subscription_type = new_subscription
+            await user.save()
+            return user
+        except DoesNotExist:
+            return None
 
     @staticmethod
     async def get_user_by_id(user_id: int) -> Optional[User_Pydantic]:

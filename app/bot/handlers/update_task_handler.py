@@ -5,9 +5,10 @@ from telegram import Update
 from telegram.constants import ChatType
 from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters
 
-from app.models.models import ProjectStatus, TaskStatus
+from app.models.models import ProjectStatus, TaskStatus, User
 from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
+from app.services.user_service import UserService
 
 ACTUALIZAR_TAREA_STATES = range(4)
 (
@@ -33,8 +34,14 @@ async def actualizartarea_command(update: Update, context: ContextTypes.DEFAULT_
         await update.message.reply_text("❌ No hay proyecto activo en este grupo")
         return ConversationHandler.END
 
-    # Obtener tareas del usuario en este proyecto
-    tasks = await TaskService.get_tasks_by_user_and_project(user.id, project.id)
+    # Verificar si es admin
+    is_admin = await UserService.is_user_admin(project.id, user.id)
+
+    if is_admin:
+        tasks = await TaskService.get_tasks_by_project(project.id)
+    else:
+        tasks = await TaskService.get_tasks_by_user_and_project(user.id, project.id)
+
     if not tasks:
         await update.message.reply_text("❗ No tienes tareas asignadas en este proyecto")
         return ConversationHandler.END
@@ -47,8 +54,17 @@ async def actualizartarea_command(update: Update, context: ContextTypes.DEFAULT_
     tasks_list = "\n".join([
                                f"• {task.custom_id}: {task.name} (Estado: {TaskStatus(task.status).name}, Fecha límite: {task.deadline.strftime('%Y-%m-%d %H:%M')})"
                                for task in tasks])
+
+    if is_admin:
+        print("es admin")
+        await update.message.reply_text(
+            f"📝 Las tareas del proyecto son las siguientes:\n\n{tasks_list}\n\n"
+            "Por favor, escribe el ID de la tarea que deseas actualizar:"
+        )
+        return SELECT_TASK
+
     await update.message.reply_text(
-        f"📝 Tus tareas asignadas:\n{tasks_list}\n"
+        f"📝 Tus tareas asignadas:\n\n{tasks_list}\n\n"
         "Por favor, escribe el ID de la tarea que deseas actualizar:"
     )
     return SELECT_TASK

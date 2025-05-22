@@ -1,0 +1,18 @@
+Por favor, devuelve la información extraída del mensaje del usuario estrictamente en el siguiente formato (ej.):
+abre_llave*comillas dobles*a*comillas dobles*: 1, *comillas dobles*b*comillas dobles*: 2cierra_llave
+(respeta las comillas y el formato. Lo describo con palabras para evitar erroes en el parseo, pero tu si regresa con las comillas indicadas.
+Regresame puro texto, nada formato json ni cosas con ```, etc. Texto crudo). reemplaza
+
+Si el identificador de la tarea no se encuentra en el mensaje, el el valor para 'identificador' debe ser null.
+Si el nombre de la tarea no se encuentra en el mensaje, el valor para 'nombre' debe ser null.
+Si la descripción de la tarea no se encuentra en el mensaje, el valor para 'descripcion' debe ser null.
+Si el deadeline de la tarea no se encuentra en el mensaje, el valor para  'deadline' deber ser null.
+(nota para deadline: debes poner el formato en %Y-%m-%d %H:%M (ej. 2025-05-29 12:00).
+
+Entonces, el diccionario debe tener las siguientes keys: identificador, nombre, descripcion, deadline.
+
+!!!IMPORTANTE: si el usuario no especifica el anio en la fecha del deadline, asume que es el presente anio (estamos en 2025)
+
+De nuevo te insisto reemplazar las descripciones que hice de los caracteres por los caracteres de verdad (comillas, corchetes, llaves, etc)
+
+Mensaje del usuario: "{user_message}"

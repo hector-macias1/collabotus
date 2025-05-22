@@ -44,3 +44,25 @@ class GeminiService:
         except Exception as e:
             logging.error(f"Gemini Service ERROR: {e}")
             return None
+
+    async def solve_overdue_task(self, context) -> Optional[str]:
+        text = LoadPrompt.load_prompt("app/services/prompts/notify.txt")
+        print(text)
+
+        prompt = text.format(
+            custom_id=context['custom_id'],
+            task_name=context['task_name'],
+            deadline=context['deadline'],
+            project_name=context['project_name'],
+            assigned_user=context['assigned_user'],
+            current_status=context['current_status'],
+            team_members=context['team_members'],
+            all_project_tasks=context['all_project_tasks']
+        )
+        print("WILL PROCESS THE RESPONSE FOR THIS PROMPT: ", prompt)
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=prompt
+        )
+        print("RESPONSE: ", response.text)
+        return response.text

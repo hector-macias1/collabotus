@@ -127,6 +127,77 @@ def get_task_conversation_handler():
         allow_reentry=True
     )
 
+async def agregar_tarea_nlp(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
+    user = update.effective_user
+    user_id = update.effective_user.id
+
+    if update.effective_chat.type != ChatType.GROUP and update.effective_chat.type != ChatType.SUPERGROUP:
+        await update.message.reply_text("❗ Este comando solo puede usarse desde un chat grupal.")
+        return
+
+    # Verify if user exists in DB
+    if not (user := await User.get_or_none(id=user_id)):
+        await update.message.reply_text(
+            "❗No estás registrado en el sistema. Utiliza el comando /registro por chat privado para registrarte."
+        )
+        return
+
+    # Verify active project
+    project = await ProjectService.get_project_by_chat_id(str(chat.id))
+    if not project or project.status == ProjectStatus.TERMINATED:
+        await update.message.reply_text("❌ No hay proyecto activo en este grupo")
+        return
+
+    data = context.user_data.get("task_data", {})
+
+    custom_id = data.get("identificador")
+    name = data.get("nombre")
+    description = data.get("descripcion")
+    deadline = data.get("deadline")
+
+    if not custom_id or not name or not deadline:
+        await update.message.reply_text("❌ No pude crear la tarea. Necesito que me por lo menos me des el identificador, nombre y deadline")
+
+    task_data = {
+        "custom_id": data.get("identificador"),
+        "name": data.get("nombre"),
+        "description": data.get("descripcion"),
+        "deadline": datetime.strptime(data.get("deadline"), "%Y-%m-%d %H:%M"),
+    }
+
+    # Save
+    try:
+        project = await ProjectService.get_project_by_chat_id(str(update.effective_chat.id))
+        print(project)
+        task, created = await Task.get_or_create(
+            custom_id=task_data["custom_id"],
+            name=task_data["name"],
+            description=task_data["description"],
+            deadline=task_data["deadline"],
+            project_id=project.id,
+        )
+
+        llm = GeminiService(Settings.GEMINI_KEY, Settings.LLM_MODEL)
+
+        user_to_assign = await UserService.get_user_by_id(
+            await llm.assign_task(project.id, task.name, task.description)
+        )
+
+        await TaskService.assign_user(task.id, user_to_assign.id)
+
+        await update.message.reply_text(
+            f"✅ Tarea creada:\n"
+            f"ID: {task_data['custom_id']}\n"
+            f"Nombre: {task_data['name']}\n"
+            f"Deadline: {task_data['deadline'].strftime('%Y-%m-%d %H:%M')}\n\n"
+            f"Asginada a: @{user_to_assign.first_name}"
+        )
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error: {str(e)}")
+
+    context.user_data.clear()
+
 async def listar_tareas_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     user = update.effective_user
@@ -147,6 +218,7 @@ async def listar_tareas_command(update: Update, context: ContextTypes.DEFAULT_TY
     tasks_string = ''
 
     for task in tasks:
-        tasks_string += f'{task.custom_id}: {task.name}\n'
+        print(task.model_dump)
+        tasks_string += f'{task.custom_id}: {task.name}\nstatus: {TaskStatus(task.status).name}\n\n'
 
     await update.message.reply_text("Tareas:\n" + tasks_string)

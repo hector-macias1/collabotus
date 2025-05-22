@@ -87,7 +87,7 @@ class Task(models.Model):
     id = fields.IntField(pk=True)
     custom_id = fields.CharField(max_length=50, null=True)
     name = fields.CharField(max_length=100)
-    description = fields.TextField()
+    description = fields.TextField(null=True)
     status = fields.CharEnumField(TaskStatus, default=TaskStatus.ASSIGNED)
     deadline = fields.DatetimeField()
     created_at = fields.DatetimeField(auto_now_add=True)

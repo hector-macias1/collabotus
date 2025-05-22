@@ -1,10 +1,22 @@
 Por favor, devuelve la información extraída del mensaje del usuario estrictamente en el siguiente formato (ej.):
 abre_llave*comillas dobles*a*comillas dobles*: 1, *comillas dobles*b*comillas dobles*: 2cierra_llave
-(respeta las comillas y el formato. Lo describo con palabras para evitar erroes en el parseo, pero tu si regresa con las comillas indicadas.
-Regresame puro texto, nada formato json ni cosas con ```, etc. Texto crudo).
-Si el nombre del proyecto no se encuentra en el mensaje, el valor para 'nombre' debe ser null.
-Si la descripción del proyecto no se encuentra en el mensaje, el valor para 'descripcion' debe ser null.
+(respeta las comillas y el formato. Lo describo con palabras para evitar errores en el parseo, pero tu si regresa con
+las comillas, llaves y corchetes indicados.
+Regresame puro texto, nada formato json ni cosas con ```, etc., quiero Texto crudo).
 
+Las llaves de ese 'json' o 'diccionario' deben ser: nombre, descripcion (sin tilde) y miembros (esta última es un array
+que debe tener los usuarios arrobados que puso el usuario, pero sin el arroba ej. @Adriana, @Hector ponlos como Adriana, Hector)
 
+Reglas:
+- Si el nombre del proyecto no se encuentra en el mensaje, el valor para 'nombre' debe ser null.
+- Si la descripción del proyecto no se encuentra en el mensaje, el valor para 'descripcion' debe ser null.
+- Si no hubo menciones en el mensaje, el valor de miembros debe ser null.
+
+Te voy a dar un ejemplo de formato:
+Ejemplo 1:
+Usuario: "Quiero crear un ProyectoX para app con @Adriana @Hector"
+Respuesta: abre_llave*comillas dobles*nombre*comillas dobles*: *comillas dobles*ProyectoX*comillas dobles*, *comillas dobles*descripcion*comillas dobles*: *comillas dobles*app*comillas dobles*, *comillas dobles*miembros*comillas dobles*: abre_corchete*comillas dobles*Adriana*comillas dobles*, *comillas dobles*Hector*comillas dobles*cierra_corchetecierra_llave
+
+De nuevo te insisto: reemplazar las descripciones que hice de los caracteres por los caracteres de verdad (comillas, corchetes, llaves, etc). No pongas tal cual 'abre_llave..."', pon los caracteres reales.
 
 Mensaje del usuario: "{user_message}"

@@ -1,5 +1,6 @@
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ConversationHandler, CallbackQueryHandler, filters
 
+from app.utils.time_calc import *
 from app.bot.handlers.jobs import check_overdue_tasks
 from app.bot.handlers.update_task_handler import get_update_task_conversation_handler
 from app.config import settings
@@ -69,8 +70,8 @@ class BotManager:
         # Register handlers
         self.application.add_handler(CommandHandler("registro", registro_command))
         self.application.add_handler(CommandHandler("actualizar_habilidades", actualizar_habilidades_command))
-        #self.application.add_handler(CallbackQueryHandler(handle_survey_response))
-        #self.application.add_handler(CallbackQueryHandler(handle_survey_response2))
+        self.application.add_handler(CallbackQueryHandler(handle_survey_response))
+        self.application.add_handler(CallbackQueryHandler(handle_survey_response2))
 
         # Conversation handlers
         self.application.add_handler(get_project_conversation_handler())
@@ -95,8 +96,8 @@ class BotManager:
         # Verificar tareas vencidas cada 1 hora
         job_queue.run_repeating(
             check_overdue_tasks,
-            interval=3600,
-            first=10
+            interval=900,
+            first=seconds_until_next_quarter()
         )
 
     async def shutdown(self):

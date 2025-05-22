@@ -7,7 +7,7 @@ from app.models.models import (
     Project, User, ProjectUser, ProjectRole, ProjectStatus, Task,
     Project_Pydantic, ProjectCreate_Pydantic,
     ProjectUser_Pydantic, ProjectUserCreate_Pydantic,
-    Task_Pydantic, TaskCreate_Pydantic
+    Task_Pydantic, TaskCreate_Pydantic, User_Pydantic
 )
 from app.models.models import TaskStatus
 
@@ -57,7 +57,7 @@ class TaskService:
     @staticmethod
     async def get_tasks_by_project(project_id: int) -> List[Task_Pydantic]:
         tasks = await Task.filter(project_id=project_id).all()
-        print("TASKS: ", tasks)
+        #print("TASKS: ", tasks)
         return [await Task_Pydantic.from_tortoise_orm(task) for task in tasks]
 
     @staticmethod
@@ -90,6 +90,16 @@ class TaskService:
 
 
     """New methods"""
+
+    @staticmethod
+    async def get_user_by_task(task_id: int) -> Optional[int]:
+        try:
+            task = await Task.get(id=task_id).select_related("assigned_user")
+            if task.assigned_user:
+                return task.assigned_user.id
+            return None
+        except DoesNotExist:
+            return None
 
     @staticmethod
     async def get_task_by_id(task_id: int) -> Optional[Task]:

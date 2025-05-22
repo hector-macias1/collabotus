@@ -7,9 +7,12 @@ from telegram.ext import (
     filters,
     ConversationHandler
 )
-from app.models.models import ProjectStatus, ProjectCreate_Pydantic, ProjectUser
+from tortoise.expressions import Q
+
+from app.models.models import ProjectStatus, ProjectCreate_Pydantic, ProjectUser, SubscriptionType
 from app.models.models import User
 from app.services.project_service import ProjectService
+from app.services.user_service import UserService
 
 # Definición de estados para la conversación
 ASK_NAME, ASK_DESC = range(2)
@@ -36,6 +39,9 @@ async def crear_proyecto_command(update: Update, context: ContextTypes.DEFAULT_T
         return ConversationHandler.END
 
     # Verify if user has premium account to create more than one project
+    if not await UserService.can_create_project(user.id):
+        await update.message.reply_text("❌ No puedes crear más proyectos con tu suscripción actual.")
+        return ConversationHandler.END
 
     # Send private message
     await context.bot.send_message(
@@ -208,31 +214,64 @@ async def handle_nlp_project(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
         return
 
+    if not await UserService.can_create_project(user_id):
+        await update.message.reply_text("❌ No puedes crear más proyectos con tu suscripción actual.")
+        return
+
     data = context.user_data.get("project_data", {})
 
     name = data.get("nombre")
     description = data.get("descripcion")
+    mentioned_users = data.get("miembros", [])
+    missing_users = []
+    valid_member_ids = []
 
-    print(name, description)
+    print(name, description, mentioned_users)
 
-    """if name or description is None:
+    """if name or description or mentioned_users is None:
         await update.message.reply_text("❗ Para crear un proyecto necesito que me des un nombre y su descripción.")
         return"""
 
+    # Buscar usuarios en DB
+    for user_identifier in mentioned_users:
+        user = await User.filter(
+            Q(username=user_identifier) | Q(first_name=user_identifier)
+        ).first()
+
+        if not user:
+            missing_users.append(user_identifier)
+        else:
+            valid_member_ids.append(user.id)
+
+    # Validar usuarios faltantes
+    if missing_users:
+        error_msg = "❌ Estos usuarios no están registrados:\n" + "\n".join(
+            f"- {u}" for u in missing_users)
+        await update.message.reply_text(error_msg)
+        return
+
+    # Crear proyecto con miembros
     project_data = {
-        "name": name,
-        "description": description,
+        "name": data.get("nombre"),
+        "description": data.get("descripcion"),
         "telegram_chat_id": str(chat_id)
     }
 
+    valid_member_ids.append(user_id)
+    mentioned_users.append(update.effective_user.username)
+
     new_project = await ProjectService.create_project(
         project_data=project_data,
-        admin_user_id=update.effective_user.id,
-        member_ids=[]
+        admin_user_id=user_id,
+        member_ids=valid_member_ids  # <-- Aquí pasamos los IDs
     )
 
+    # Mensaje de confirmación con miembros
+    members_list = "\n".join([f"👉 @{u}" for u in mentioned_users])
     await context.bot.send_message(
         chat_id=chat_id,
-        text=f"🚀 Se ha creado un nuevo proyecto por @{update.effective_user.username}:\n\n*{name}*\n_{description}_",
+        text=f"🚀 Proyecto *{name}* creado por @{update.effective_user.username}\n\n"
+             f"📝 Descripción: {description}\n\n"
+             f"👥 Miembros:\n\n{members_list}",
         parse_mode="Markdown"
     )

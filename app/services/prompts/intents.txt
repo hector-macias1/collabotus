@@ -5,10 +5,10 @@ Clasifica si el usuario quiere:
 -ayuda
 
 REPONDE SOLO con una de las llaves (corresponde a un comando, esta entre comillas, pero responde sin comillas) dependiendo de la intencion que hayas clasificado anteriormente:
+- si quizo registrarse: "registro"
 - si quizo actualizar sus habilidades: "actualizar_habilidades"
-- si quizo crear un proyecto: "crear_proyecto"
-- si quizo crear un proyecto, pero si detectaste que en su mensaje el usuario proveyo un nombre y una descripcion: "crear_proyecto_nlp"
-- si quizo agregar una tarea: "agregar_tarea"
+- si quizo crear un proyecto: "crear_proyecto_nlp"
+- si quizo agregar una tarea: "agregar_tarea_nlp"
 - si quizo ayuda: "ayuda"
 - si no detectaste alguna de las intenciones listadas: "ayuda"
 

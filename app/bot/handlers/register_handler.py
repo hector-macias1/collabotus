@@ -10,16 +10,46 @@ survey = [
     {
         "question": "¿Qué lenguaje de programación dominas más?",
         "key": "language",
-        "options": ["Python", "Java", "JavaScript", "PHP", "C#"]
+        "options": ["Python", "Java", "JavaScript", "PHP", "C#", 'C/C++']
     },
     {
         "question": "¿Qué framework dominas más?",
         "key": "framework",
-        "options": ["Django", "SpringBoot", "React, Angular, Node.js, Express, Vue, etc.", "Laravel"]
+        "options": ["Django", "SpringBoot", "React, Angular, Node.js, Express, Vue, etc.", "Laravel", '.NET']
     },
     {
         "question": "¿Cómo calificas tu dominio en bases de datos (sql/nosql)?\n1: Básico - 5: Experto",
         "key": "database",
+        "options": ["1", "2", "3", "4", "5"]
+    },
+    {
+        "question": "¿Cómo calificas tu dominio en herramientas de prototipado (Figma, Uizard, etc.)?\n1: Básico - 5: Experto",
+        "key": "prototyping",
+        "options": ["1", "2", "3", "4", "5"]
+    },
+    {
+        "question": "¿Cómo calificas tu dominio en metodologías ágiles?\n1: Básico - 5: Experto",
+        "key": "agile",
+        "options": ["1", "2", "3", "4", "5"]
+    },
+    {
+        "question": "¿Cómo calificas tu dominio en levantamiento de requerimientos?\n1: Básico - 5: Experto",
+        "key": "requirements",
+        "options": ["1", "2", "3", "4", "5"]
+    },
+    {
+        "question": "¿Cómo calificas tu dominio en documentación técnica?\n1: Básico - 5: Experto",
+        "key": "documentation",
+        "options": ["1", "2", "3", "4", "5"]
+    },
+    {
+        "question": "¿Cómo calificas tu dominio en testing/QA (unit testing, herramientas como Selenium)?\n1: Básico - 5: Experto",
+        "key": "testing",
+        "options": ["1", "2", "3", "4", "5"]
+    },
+    {
+        "question": "¿Cómo calificas tu dominio en DevOps (CI/CD, Docker, plataformas cloud)?\n1: Básico - 5: Experto",
+        "key": "devops",
         "options": ["1", "2", "3", "4", "5"]
     }
 ]
@@ -28,6 +58,12 @@ skill_mapping = {
     "language": SkillType.LANGUAGE,
     "framework": SkillType.FRAMEWORK,
     "database": SkillType.DATABASE,
+    "prototyping": SkillType.PROTOTYPING,
+    "agile": SkillType.AGILE,
+    "requirements": SkillType.REQUIREMENTS,
+    "documentation": SkillType.DOCUMENTATION,
+    "testing": SkillType.TESTING,
+    "devops": SkillType.DEVOPS,
 }
 
 # Dictionary for saving responses
@@ -57,7 +93,7 @@ async def registro_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     _user, created = await User.get_or_create(
         id=update.effective_user.id,
-        username=update.effective_user.username,
+        username=update.effective_user.username.lower(),
         first_name=update.effective_user.first_name
     )
 

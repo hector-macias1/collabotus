@@ -24,6 +24,12 @@ QUESTION_KEY_TO_TYPE = {
     "language": SkillType.LANGUAGE,
     "framework": SkillType.FRAMEWORK,
     "database": SkillType.DATABASE,
+    "prototyping": SkillType.PROTOTYPING,
+    "agile": SkillType.AGILE,
+    "requirements": SkillType.REQUIREMENTS,
+    "documentation": SkillType.DOCUMENTATION,
+    "testing": SkillType.TESTING,
+    "devops": SkillType.DEVOPS,
 }
 
 async def save_user_skill_by_question_key(user_id: int, question_key: str, skill_name: str, update_existing: bool = True):

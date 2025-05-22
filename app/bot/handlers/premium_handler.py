@@ -3,7 +3,9 @@ from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from telegram.constants import ChatType
 
-from app.models.models import User
+from app.models.models import User, SubscriptionType
+from app.services.user_service import UserService
+
 
 async def premium_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Manage /start command"""
@@ -23,3 +25,7 @@ async def premium_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     await update.message.reply_text("Para elevar tu cuenta a premium, sigue el siguiente enlace: \n")
+
+    updated_user = await UserService.update_subscription(user_id, SubscriptionType.PREMIUM)
+
+    await update.message.reply_text("Bienvenido a Collabotus Premium! \n\n")

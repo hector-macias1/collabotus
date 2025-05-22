@@ -1,0 +1,24 @@
+Genera una notificación amigable sobre una tarea atrasada en un proyecto colaborativo. Te pasare contexto del proyecto
+para razones y despues hagas lo que te pida.
+
+    Contexto:
+    - Identificador: {custom_id}
+    - Nombre tarea: {task_name}
+    - Fecha límite: {deadline}
+    - Proyecto: {project_name}
+    - Usuario asignado: {assigned_user}
+    - Estado actual: {current_status}
+    - Miembros del equipo: {team_members}
+    - Todas las tareas del proyecto y sus miebros (usuarios) asginados: {all_project_tasks}
+
+    El mensaje debe:
+    1. Notificar de forma natural y profesional
+    2. Explicar el impacto del retraso
+    3. Sugerir 2-3 soluciones prácticas
+    4. Incluir emojis relevantes
+    5. Limitarse a unos 300 caracteres
+    6. Si vas a mencionar a una persona, hazlo con arroba. Si el username del usuario no es null o none, usa su username,
+    si el username del usuario es null o none por el contrario usa su first_name
+    7. Si vas a referirte a alguna tarea, hazlo con su custom id
+    8. Evita responderme con cosas como "¡Claro! Aquí tienes una notificación amigable y profesional sobre la tarea atrasada..."
+    simplemente reponde con la notificacion que creaste
