@@ -75,7 +75,7 @@ class ProjectService:
         Returns:
             List of projects with the specified status.
         """
-        # Manejar tanto objetos Enum como valores de string
+        # Manage enum objects and string values
         status_value = status.value if isinstance(status, ProjectStatus) else status
         projects = await Project.filter(status=status_value)
         return [await Project_Pydantic.from_tortoise_orm(project) for project in projects]

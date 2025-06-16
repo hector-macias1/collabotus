@@ -32,19 +32,19 @@ class SkillService:
         skills_by_user = {}
         for pu in project_users:
             user = pu.user
-            user_skills = user.user_skills  # Precargadas via prefetch
+            user_skills = user.user_skills  # Preloaded with fetch
 
             skills_dict = {}
             for us in user_skills:
                 skill_name = us.skill.name
                 try:
-                    skill_value = int(us.value)  # Convertir a entero si es posible
+                    skill_value = int(us.value)  # Convert to int if possible
                 except ValueError:
-                    skill_value = us.value  # Mantener como string si falla
+                    skill_value = us.value  # Keep as string if failed
 
                 skills_dict[skill_name] = skill_value
 
-            # Usar first_name como clave (podría ser username si está disponible)
+            # Use first_name as key (could be username if available)
             skills_by_user[user.id] = skills_dict
 
         return skills_by_user

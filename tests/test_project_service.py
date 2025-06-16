@@ -32,7 +32,7 @@ async def test_project_service():
     # 1. Create a new project with admin and members
     print("\n1. Creating new project...")
     project_data = {
-        "name": "Proyecto Demo",
+        "name": "Demo Project",
         "description": "This is a demo project",
         "telegram_chat_id": "12345",
         "status": ProjectStatus.ACTIVE.value  # We use .value to get the enum string
@@ -44,20 +44,20 @@ async def test_project_service():
         member_ids=[member1.id, member2.id]
     )
 
-    print(f"Proyecto creado: {new_project.name} (ID: {new_project.id})")
+    print(f"Created project: {new_project.name} (ID: {new_project.id})")
 
     # 2. Get project data
     print("\n2. Getting project data...")
     project = await ProjectService.get_project_by_id(new_project.id)
-    print(f"Proyecto: {project.name}")
+    print(f"Project: {project.name}")
 
     # 2.1 Get projects by state
     print("\n2.1 Getting projects by their state...")
     # We can use both the enum and the string
     active_projects1 = await ProjectService.get_projects_by_status(ProjectStatus.ACTIVE)
     active_projects2 = await ProjectService.get_projects_by_status(ProjectStatus.ACTIVE.value)
-    print(f"Proyectos activos encontrados (usando enum): {len(active_projects1)}")
-    print(f"Proyectos activos encontrados (usando string): {len(active_projects2)}")
+    print(f"Active projects found (using enum): {len(active_projects1)}")
+    print(f"Active projects found (using string): {len(active_projects2)}")
 
     # 3. Get project members
     print("\n3. Getting project members...")

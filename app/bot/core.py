@@ -39,7 +39,7 @@ class BotManager:
             .build()
         )
 
-        # Configurar el scheduler
+        # Configure scheduler
         self._setup_scheduler()
 
         await self._register_handlers()
@@ -90,10 +90,10 @@ class BotManager:
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, handle_message))
 
     def _setup_scheduler(self):
-        """Configura las tareas programadas"""
+        """Configure programmed jobs"""
         job_queue = self.application.job_queue
 
-        # Verificar tareas vencidas cada 1 hora
+        # Verify overdue tasks every 15 mins (can be changed)
         job_queue.run_repeating(
             check_overdue_tasks,
             interval=900,

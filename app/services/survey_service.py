@@ -14,10 +14,10 @@ async def save_user_skill(user_id: int, skill_type: SkillType, skill_value: str)
     except DoesNotExist:
         raise ValueError(f"Usuario con user_id={user_id} no encontrado")
 
-    # Buscar o crear skill en el catálogo
+    # Search or create skill in DB catalog
     skill, _ = await Skill.get_or_create(name=skill_type, defaults={"type": skill_type})
 
-    # Guardar relación en UserSkill
+    # Save relation in UserSkill
     await UserSkill.create(user=user, skill=skill, value=skill_value)
 
 QUESTION_KEY_TO_TYPE = {

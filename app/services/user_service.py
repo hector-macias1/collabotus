@@ -32,8 +32,13 @@ class UserService:
     @staticmethod
     async def find_users_by_identifiers(identifiers: List[str]) -> Tuple[List[int], List[str]]:
         """
-        Encuentra usuarios por username o first_name
-        Returns: (lista de IDs válidos, lista de identificadores no encontrados)
+        Finds user by username or first_name
+
+        Args:
+            identifiers: List of user identifiers
+
+        Returns:
+            List of valid ids, list of not found identifiers
         """
         valid_ids = []
         missing = []

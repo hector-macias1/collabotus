@@ -7,7 +7,7 @@ def seconds_until_next_hour():
 
 def seconds_until_next_quarter():
     now = datetime.now()
-    # Redondea a la próxima marca de 15 minutos
+    # round to next 15 min mark
     next_minute = (now.minute // 15 + 1) * 15
     if next_minute == 60:
         next_time = now.replace(hour=(now.hour + 1) % 24, minute=0, second=0, microsecond=0)

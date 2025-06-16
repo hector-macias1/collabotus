@@ -29,7 +29,9 @@ async def check_overdue_tasks(context):
 
             assigned_tasks = ''
             for tk in tasks:
-                assigned_tasks += f"User {await TaskService.get_user_by_task(tk.id)} - Task {tk.custom_id} {tk.name} {tk.deadline}\n"
+                assigned_tasks += f"""
+                User {await TaskService.get_user_by_task(tk.id)} - Task {tk.custom_id} {tk.name} {tk.deadline}\n
+                """
 
             # Build context for AI service
             context_ai = {
